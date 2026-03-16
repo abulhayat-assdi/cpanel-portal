@@ -5,6 +5,7 @@ import Card, { CardBody } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as ssService from "@/services/successStoryService";
+import Image from "next/image";
 
 type Tab = "videos" | "reviews";
 
@@ -399,10 +400,12 @@ export default function SuccessStoriesAdminPage() {
                                                 <tr key={v.id} className={i % 2 === 0 ? "bg-white" : "bg-[#f9fafb]"}>
                                                     <td className="px-4 py-3 border border-[#e5e7eb] text-center font-medium">{v.order}</td>
                                                     <td className="px-4 py-3 border border-[#e5e7eb]">
-                                                        <img
+                                                        <Image
                                                             src={`https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`}
                                                             alt=""
-                                                            className="w-16 h-10 rounded object-cover"
+                                                            width={64}
+                                                            height={40}
+                                                            className="rounded object-cover"
                                                         />
                                                     </td>
                                                     <td className="px-4 py-3 border border-[#e5e7eb] font-medium text-gray-900">{v.title}</td>

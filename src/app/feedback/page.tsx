@@ -5,11 +5,12 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Card, { CardBody } from "@/components/ui/Card";
 import * as ssService from "@/services/successStoryService";
+import Image from "next/image";
 
 // ─── Video Card ───
 function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id: string) => void }) {
     const [imgError, setImgError] = useState(false);
-    const thumbUrl = `https://img.youtube.com/vi/${story.videoId}/maxresdefault.jpg`;
+    const thumbUrl = `https://img.youtube.com/vi/${story.videoId}/hqdefault.jpg`;
 
     return (
         <div
@@ -18,11 +19,13 @@ function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id
         >
             {!imgError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                     src={thumbUrl}
                     alt={story.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-70 group-hover:opacity-85"
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-70 group-hover:opacity-85"
                     onError={() => setImgError(true)}
+                    sizes="(max-width: 768px) 100vw, 50vw"
                 />
             ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-[#0d2137] via-[#0a3020] to-[#0f1923]" />
@@ -142,21 +145,16 @@ export default function PublicSuccessStoriesPage() {
         <>
             <Header brandText="Sales & Marketing" navLinks={navLinks} ctaText="Enroll" />
 
-            <main className="min-h-screen bg-[#f9fafb]">
-                {/* Header */}
-                <section className="w-full bg-white py-8 md:py-10 border-b border-gray-100">
-                    <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-                        <span className="inline-block py-1 px-3 rounded-full bg-[#ecfdf5] text-[#059669] text-sm font-semibold mb-4 border border-[#d1fae5]">
-                            Alumni Success
-                        </span>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1f2937] mb-6">
-                            Our Success Stories
-                        </h1>
-                        <p className="text-lg md:text-xl text-[#6b7280] max-w-2xl mx-auto leading-relaxed">
-                            Watch real stories from our students — how they transformed their careers through the Art of Sales & Marketing program.
-                        </p>
-                    </div>
-                </section>
+            <main className="min-h-screen bg-[#fafaf9] flex flex-col">
+                {/* Clean Page Header */}
+                <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
+                        Our Success Stories
+                    </h1>
+                    <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
+                        Watch real stories from our students — how they transformed their careers through the Art of Sales & Marketing program.
+                    </p>
+                </div>
 
                 {loading ? (
                     <div className="py-20 text-center text-gray-400">Loading stories...</div>
@@ -219,7 +217,7 @@ export default function PublicSuccessStoriesPage() {
                                                             {review.batch}
                                                         </span>
                                                         <div className="flex text-[#fbbf24]">
-                                                            {[...Array(review.rating)].map((_, i) => (
+                                                            {[...Array(Number(review.rating) || 5)].map((_, i) => (
                                                                 <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                                 </svg>

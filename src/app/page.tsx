@@ -24,36 +24,36 @@ export default function HomePage() {
 
 
     const learningOutcomes = [
-        "Confidently pitch and sell products face-to-face and online with absolute honesty.",
-        "Master AI tools, Canva, and Meta Ads responsibly to drive business growth.",
-        "Communicate persuasively and handle objections while respecting customer choices.",
-        "Design and execute high-converting digital marketing campaigns without deception.",
-        "Build a professional CV, portfolio, and a personal brand rooted in integrity.",
-        "Apply Islamic ethics (Amanah, Adl, Ikhlas) in daily business decisions and workplace behavior.",
-        "Gain proficiency in MS Office Applications to manage business data and professional communications.",
-        "Develop highly engaging landing pages and content marketing strategies that deliver real value.",
+        "100% সততা বজায় রেখে Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট পিচ ও সেল করা।",
+        "বিজনেসের গ্রোথ বুস্ট করতে রেসপন্সিবিলিটির সাথে AI Tools, Canva এবং Meta Ads মাস্টারি।",
+        "Customer-এর চয়েসকে রেসপেক্ট করে পারসুয়েসিভ কমিউনিকেশন এবং যেকোনো অবজেকশন স্মার্টলি হ্যান্ডেল করা।",
+        "কোনো ফেক প্রমিস বা ক্লিকবেইটের ফাঁদ ছাড়া, একদম জেনুইন ভ্যালু দিয়ে High-Converting Digital Marketing ক্যাম্পেইন ডিজাইন ও এক্সিকিউট করা।",
+        "নিজের ইন্টিগ্রিটি বজায় রেখে একটি প্রফেশনাল CV, পোর্টফোলিও এবং স্ট্রং Personal Brand বিল্ড করা।",
+        "প্রতিদিনের বিজনেস ডিসিশন ও ওয়ার্কপ্লেস বিহেভিয়ারে ইসলামিক এথিক্স (Amanah, Adl, Ikhlas) অ্যাপ্লাই করা।",
+        "বিজনেস ডেটা ম্যানেজ এবং প্রফেশনাল কমিউনিকেশনের জন্য Business Management Tools (MS Office) অ্যাপ্লিকেশনে প্রো-লেভেলের দক্ষতা অর্জন।",
+        "Customer ও Client-কে রিয়েল ভ্যালু প্রোভাইড করে এমন হাইলি এঙ্গেজিং Landing Page এবং Content Marketing স্ট্র্যাটেজি ডেভেলপ করা।",
     ];
 
     const audiences = [
         {
             icon: defaultAudienceIcons.students,
             title: "Students",
-            description: "Bridge the gap between education and employment. Overcome fear and build real-world confidence.",
+            description: "যারা শুধু পুঁথিগত বিদ্যায় আটকে না থেকে রিয়েল-ওয়ার্ল্ডের জন্য রেডি হতে চায়। কথা বলার জড়তা কাটিয়ে Practical Skills ও সেলফ-কনফিডেন্স দিয়ে ক্যারিয়ারের একটি স্ট্রং ফাউন্ডেশন গড়তে চায়।",
         },
         {
             icon: defaultAudienceIcons.jobSeekers,
             title: "Job Seekers",
-            description: "Impress in job interviews with confident communication and secure a dignified career in a competitive market.",
+            description: "যারা কনফিডেন্ট কমিউনিকেশন এবং High-Demanding Skills দিয়ে জব ইন্টারভিউতে নিজেকে বেস্ট প্রমাণ করতে চায়। আজকের এই কম্পিটিটিভ মার্কেটে একটি সম্মানজনক ক্যারিয়ার কনফার্ম করতে চায়।",
         },
         {
             icon: defaultAudienceIcons.entrepreneurs,
             title: "Entrepreneurs",
-            description: "Grow your business by mastering offline and online sales, and build long-term trust with real customers.",
+            description: "যারা প্র্যাকটিক্যাল অফলাইন এবং অনলাইন সেলস স্ট্র্যাটেজি মাস্টার করে নিজেদের বিজনেস Scale Up করতে চায়। আর কাস্টমারদের সাথে লং-টার্ম ট্রাস্ট এবং স্ট্রং রিলেশনশিপ বিল্ড করতে চায়।",
         },
         {
             icon: defaultAudienceIcons.ethicalLearners,
             title: "Ethical Learners",
-            description: "Earn halal rizq with dignity by treating sales as a trust (amanah) without manipulation or haram shortcuts.",
+            description: "যারা সেলসকে 'আমানাহ' (Trust) হিসেবে নিতে চায়। কোনো ফেক প্রমিস, ম্যানিপুলেশন বা হারাম শর্টকাটের ফাঁদে না পড়ে, 100% সততা ও সম্মানের সাথে হালাল ইনকাম জেনারেট করতে চায়।",
         },
     ];
 
@@ -101,13 +101,13 @@ export default function HomePage() {
 
                 <TargetAudience
                     title="Who This Course Is For"
-                    subtitle="Transform into a confident, ethical professional—ready for a career or business while earning halal rizq."
+                    subtitle="ক্যারিয়ার বা বিজনেসে যারা নিজেকে একজন Confident এবং Ethical Professional হিসেবে এস্টাবলিশ করতে চায় এবং 100% হালাল ইনকামের পথ নিশ্চিত করতে চায়।"
                     audiences={audiences}
                 />
 
                 <LearningOutcomes
                     title="What You Will Gain"
-                    subtitle="Practical skills, digital expertise, and an ethical mindset to thrive in today's competitive market."
+                    subtitle="আজকের কম্পিটিটিভ মার্কেটে লিড দেওয়ার জন্য Practical Skills, Digital Expertise এবং একটি স্ট্রং Ethical Mindset।"
                     outcomes={learningOutcomes}
                 />
             </main>

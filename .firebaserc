@@ -6,7 +6,7 @@
     "asm-internal-portal": {
       "hosting": {
         "app": [
-          "asm-internal-portal-v2"
+          "asm-internal-portal"
         ]
       }
     }

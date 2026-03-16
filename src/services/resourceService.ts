@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface Resource {
@@ -49,13 +49,51 @@ export const getAllResources = async (): Promise<Resource[]> => {
 export const addResource = async (resource: Omit<Resource, "id" | "uploadDate" | "createdAt">): Promise<string> => {
     try {
         const resourcesRef = collection(db, "resources");
-        const docRef = await addDoc(resourcesRef, {
+        const data: any = {
             ...resource,
             createdAt: Timestamp.now(),
-        });
+        };
+
+        // Remove undefined fields if they exist (Firestore doesn't allow undefined)
+        Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
+
+        const docRef = await addDoc(resourcesRef, data);
         return docRef.id;
     } catch (error) {
         console.error("Error adding resource:", error);
+        throw error;
+    }
+};
+
+/**
+ * Update an existing resource in Firestore
+ */
+export const updateResource = async (
+    id: string,
+    data: Partial<Omit<Resource, "id" | "uploadDate" | "createdAt">>
+): Promise<void> => {
+    try {
+        const resourceRef = doc(db, "resources", id);
+        // Remove undefined fields
+        const updateData: any = { ...data };
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        
+        await updateDoc(resourceRef, updateData);
+    } catch (error) {
+        console.error("Error updating resource:", error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a resource from Firestore
+ */
+export const deleteResource = async (id: string): Promise<void> => {
+    try {
+        const resourceRef = doc(db, "resources", id);
+        await deleteDoc(resourceRef);
+    } catch (error) {
+        console.error("Error deleting resource:", error);
         throw error;
     }
 };

@@ -3,7 +3,18 @@
 import { useState, useEffect } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
-import { getAllPolicies, getAllMeetingMinutes, addPolicy, addMeetingMinute, Policy, MeetingMinute } from "@/services/policyService";
+import { 
+    getAllPolicies, 
+    getAllMeetingMinutes, 
+    addPolicy, 
+    addMeetingMinute, 
+    updatePolicy,
+    deletePolicy,
+    updateMeetingMinute,
+    deleteMeetingMinute,
+    Policy, 
+    MeetingMinute 
+} from "@/services/policyService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function PoliciesPage() {
@@ -16,6 +27,10 @@ export default function PoliciesPage() {
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
     const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Editing states
+    const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+    const [editingMeeting, setEditingMeeting] = useState<MeetingMinute | null>(null);
 
     // Form states
     const [newMeeting, setNewMeeting] = useState({
@@ -50,7 +65,7 @@ export default function PoliciesPage() {
         fetchData();
     }, []);
 
-    // Handle add meeting minute
+    // Handle add/edit meeting minute
     const handleAddMeeting = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) {
@@ -60,24 +75,29 @@ export default function PoliciesPage() {
 
         setIsSubmitting(true);
         try {
-            await addMeetingMinute({
+            const meetingData = {
                 title: newMeeting.title,
                 meetingNumber: newMeeting.meetingNumber,
                 fileUrl: newMeeting.fileUrl,
-            });
+            };
+
+            if (editingMeeting) {
+                await updateMeetingMinute(editingMeeting.id, meetingData);
+            } else {
+                await addMeetingMinute(meetingData);
+            }
 
             await fetchData();
-            setIsMeetingModalOpen(false);
-            setNewMeeting({ title: "", meetingNumber: "", fileUrl: "" });
+            handleCloseMeetingModal();
         } catch (error) {
-            console.error("Failed to add meeting minute", error);
-            alert("Failed to add meeting minute. Please try again.");
+            console.error("Failed to save meeting minute", error);
+            alert("Failed to save meeting minute. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Handle add policy
+    // Handle add/edit policy
     const handleAddPolicy = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) {
@@ -87,21 +107,82 @@ export default function PoliciesPage() {
 
         setIsSubmitting(true);
         try {
-            await addPolicy({
+            const policyData = {
                 title: newPolicy.title,
                 version: newPolicy.version,
                 fileUrl: newPolicy.fileUrl,
-            });
+            };
+
+            if (editingPolicy) {
+                await updatePolicy(editingPolicy.id, policyData);
+            } else {
+                await addPolicy(policyData);
+            }
 
             await fetchData();
-            setIsPolicyModalOpen(false);
-            setNewPolicy({ title: "", version: "", fileUrl: "" });
+            handleClosePolicyModal();
         } catch (error) {
-            console.error("Failed to add policy", error);
-            alert("Failed to add policy. Please try again.");
+            console.error("Failed to save policy", error);
+            alert("Failed to save policy. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditPolicyClick = (policy: Policy) => {
+        setEditingPolicy(policy);
+        setNewPolicy({
+            title: policy.title,
+            version: policy.version,
+            fileUrl: policy.fileUrl,
+        });
+        setIsPolicyModalOpen(true);
+    };
+
+    const handleDeletePolicyClick = async (id: string, title: string) => {
+        if (confirm(`Are you sure you want to delete policy "${title}"?`)) {
+            try {
+                await deletePolicy(id);
+                await fetchData();
+            } catch (error) {
+                console.error("Failed to delete policy", error);
+                alert("Failed to delete policy. Please try again.");
+            }
+        }
+    };
+
+    const handleEditMeetingClick = (meeting: MeetingMinute) => {
+        setEditingMeeting(meeting);
+        setNewMeeting({
+            title: meeting.title,
+            meetingNumber: meeting.meetingNumber,
+            fileUrl: meeting.fileUrl,
+        });
+        setIsMeetingModalOpen(true);
+    };
+
+    const handleDeleteMeetingClick = async (id: string, title: string) => {
+        if (confirm(`Are you sure you want to delete meeting minutes "${title}"?`)) {
+            try {
+                await deleteMeetingMinute(id);
+                await fetchData();
+            } catch (error) {
+                console.error("Failed to delete meeting minutes", error);
+                alert("Failed to delete meeting minutes. Please try again.");
+            }
+        }
+    };
+
+    const handleCloseMeetingModal = () => {
+        setIsMeetingModalOpen(false);
+        setEditingMeeting(null);
+        setNewMeeting({ title: "", meetingNumber: "", fileUrl: "" });
+    };
+
+    const handleClosePolicyModal = () => {
+        setIsPolicyModalOpen(false);
+        setEditingPolicy(null);
+        setNewPolicy({ title: "", version: "", fileUrl: "" });
     };
 
     return (
@@ -158,8 +239,37 @@ export default function PoliciesPage() {
                             {/* Meeting Cards Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {meetings.map((meeting) => (
-                                    <Card key={meeting.id} className="hover:shadow-lg transition-shadow h-full">
+                                    <Card key={meeting.id} className="hover:shadow-lg transition-shadow h-full relative group">
                                         <CardBody className="p-6 flex flex-col h-full">
+                                            {/* Admin Controls (Top-Right) */}
+                                            {userProfile?.role === "admin" && (
+                                                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleEditMeetingClick(meeting);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                                        title="Edit"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleDeleteMeetingClick(meeting.id, meeting.title);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
+                                                        title="Delete"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                             {/* Meeting Icon */}
                                             <div className="mb-4">
                                                 <div className="w-12 h-14 bg-[#f3f4f6] rounded-lg flex items-center justify-center">
@@ -223,8 +333,37 @@ export default function PoliciesPage() {
                             {/* Policy Cards Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {policies.map((policy) => (
-                                    <Card key={policy.id} className="hover:shadow-lg transition-shadow h-full">
+                                    <Card key={policy.id} className="hover:shadow-lg transition-shadow h-full relative group">
                                         <CardBody className="p-6 flex flex-col h-full">
+                                            {/* Admin Controls (Top-Right) */}
+                                            {userProfile?.role === "admin" && (
+                                                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleEditPolicyClick(policy);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                                        title="Edit"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleDeletePolicyClick(policy.id, policy.title);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
+                                                        title="Delete"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                             {/* Document Icon */}
                                             <div className="mb-4">
                                                 <div className="w-12 h-14 bg-[#f3f4f6] rounded-lg flex items-center justify-center">
@@ -291,9 +430,11 @@ export default function PoliciesPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-[#1f2937]">Add Meeting Minutes</h2>
+                            <h2 className="text-2xl font-bold text-[#1f2937]">
+                                {editingMeeting ? "Edit Meeting Minutes" : "Add Meeting Minutes"}
+                            </h2>
                             <button
-                                onClick={() => setIsMeetingModalOpen(false)}
+                                onClick={handleCloseMeetingModal}
                                 className="text-[#6b7280] hover:text-[#1f2937]"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +489,7 @@ export default function PoliciesPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setIsMeetingModalOpen(false)}
+                                    onClick={handleCloseMeetingModal}
                                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
@@ -358,7 +499,7 @@ export default function PoliciesPage() {
                                     disabled={isSubmitting}
                                     className="flex-1 px-4 py-2 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors disabled:opacity-50"
                                 >
-                                    {isSubmitting ? "Adding..." : "Add Meeting Minutes"}
+                                    {isSubmitting ? (editingMeeting ? "Updating..." : "Adding...") : (editingMeeting ? "Update Minutes" : "Add Meeting Minutes")}
                                 </button>
                             </div>
                         </form>
@@ -371,9 +512,11 @@ export default function PoliciesPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-[#1f2937]">Add Policy</h2>
+                            <h2 className="text-2xl font-bold text-[#1f2937]">
+                                {editingPolicy ? "Edit Policy" : "Add Policy"}
+                            </h2>
                             <button
-                                onClick={() => setIsPolicyModalOpen(false)}
+                                onClick={handleClosePolicyModal}
                                 className="text-[#6b7280] hover:text-[#1f2937]"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,7 +571,7 @@ export default function PoliciesPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setIsPolicyModalOpen(false)}
+                                    onClick={handleClosePolicyModal}
                                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
@@ -438,7 +581,7 @@ export default function PoliciesPage() {
                                     disabled={isSubmitting}
                                     className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#2563eb] transition-colors disabled:opacity-50"
                                 >
-                                    {isSubmitting ? "Adding..." : "Add Policy"}
+                                    {isSubmitting ? (editingPolicy ? "Updating..." : "Adding...") : (editingPolicy ? "Update Policy" : "Add Policy")}
                                 </button>
                             </div>
                         </form>

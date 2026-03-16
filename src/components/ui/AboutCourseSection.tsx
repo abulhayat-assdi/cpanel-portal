@@ -2,16 +2,19 @@
 
 import { cn } from "@/lib/utils";
 import Reveal from "./Reveal";
+import Image from "next/image";
 
 export default function AboutCourseSection() {
     return (
-        <section className="relative w-full overflow-hidden bg-gradient-to-b from-white to-slate-50 py-20 lg:py-28">
+        <section className="relative w-full overflow-hidden bg-gradient-to-b from-white to-slate-50 pt-10 pb-20 lg:pt-14 lg:pb-28">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
-                <img
+                <Image
                     src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2940&auto=format&fit=crop"
                     alt="Professional learning environment"
-                    className="w-full h-full object-cover opacity-10"
+                    fill
+                    className="object-cover opacity-10"
+                    sizes="100vw"
                 />
                 {/* Light Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/60" />
@@ -32,19 +35,19 @@ export default function AboutCourseSection() {
                         <div className="space-y-6 text-lg text-gray-600 leading-relaxed font-medium">
                             <Reveal delay={100}>
                                 <p>
-                                    The Art of Sales &amp; Marketing is a 90-day professional training program designed to empower aspiring individuals with practical sales techniques, modern marketing strategies, and essential soft skills.
+                                    As Sunnah Foundation এর অঙ্গ প্রতিষ্ঠান As Sunnah Skill Development Institute এর &apos;The Art of Sales &amp; Marketing&apos; কোর্স একটি ৯০ দিনের প্রফেশনাল ট্রেনিং প্রোগ্রাম। এর মূল লক্ষ্য হলো শিক্ষার্থীদের practical sales techniques, modern marketing strategies এবং essential soft skills-এ দক্ষ করে তোলা।
                                 </p>
                             </Reveal>
 
                             <Reveal delay={200}>
                                 <p>
-                                    We treat sales as an &ldquo;Amanah&rdquo; (trust) and marketing as truthful communication—never manipulation. It combines practical fieldwork, digital expertise, and strong ethical values to build confident, market-ready professionals.
+                                    আমরা সেলসকে &ldquo;আমানত&rdquo; এবং মার্কেটিংকে একটি সত্যনিষ্ঠ যোগাযোগ মাধ্যম হিসেবে দেখি—কোনো ধরনের ম্যানিপুলেশন নয়। আত্মবিশ্বাসী এবং মার্কেট-রেডি প্রফেশনালস তৈরি করতে এই কোর্সে practical fieldwork, digital expertise এবং দৃঢ় নৈতিক মূল্যবোধের সমন্বয় করা হয়েছে।
                                 </p>
                             </Reveal>
 
                             <Reveal delay={300}>
                                 <p>
-                                    Delivered through real-life projects, in-person experiences, and technology-driven learning, this course bridges the gap between theory and employment—enabling you to succeed in business and earn halal rizq with dignity.
+                                    &apos;The Art of Sales &amp; Marketing&apos; কোর্সের মোট ফি ৭০,০০০ টাকা। এর মধ্যে ভর্তি ফি ১০,০০০ টাকা দেওয়া বাধ্যতামূলক এবং বাকি কোর্স ফি ও আবাসন ফি ৬০,০০০ টাকা। (আর্থিক অস্বচ্ছলতার প্রমাণ সাপেক্ষে ১০০% পর্যন্ত স্কলারশিপ দেওয়া হয়)।
                                 </p>
                             </Reveal>
                         </div>

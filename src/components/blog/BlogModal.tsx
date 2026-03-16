@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { type BlogPost } from "@/data/blogData";
+import { type BlogPost } from "@/services/blogService";
+import Image from "next/image";
 
 interface BlogModalProps {
     post: BlogPost | null;
@@ -69,20 +70,22 @@ export default function BlogModal({ post, onClose }: BlogModalProps) {
                 <div className="flex flex-col">
                     {/* Image Header */}
                     <div className="w-full h-64 sm:h-80 relative bg-gray-100">
-                        <img
-                            src={post.image}
+                        <Image
+                            src={post.featuredImage || "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"}
                             alt={post.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 896px"
                         />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 sm:p-8 pt-24 text-white">
                             <span className="inline-block px-3 py-1 bg-[#059669] text-xs font-semibold uppercase tracking-wider rounded-full mb-3">
-                                {post.category}
+                                {post.category || "Article"}
                             </span>
                             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-white mb-2 shadow-sm">
                                 {post.title}
                             </h2>
                             <div className="flex items-center gap-2 text-sm text-gray-200 font-medium">
-                                <span>{post.readTime}</span>
+                                <span>{Math.ceil((post.content?.split(' ').length || 0) / 200)} min read</span>
                             </div>
                         </div>
                     </div>

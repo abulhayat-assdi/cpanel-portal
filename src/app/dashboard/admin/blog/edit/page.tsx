@@ -9,9 +9,14 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as blogService from "@/services/blogService";
+import { uploadImage } from "@/lib/uploadImage";
+import Image from "next/image";
+import RichTextEditor from "@/components/blog/RichTextEditor";
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+
+const CATEGORIES = ["Article", "Project Presentation", "Practical Learning"];
 
 function EditBlogContent() {
     const router = useRouter();
@@ -19,19 +24,24 @@ function EditBlogContent() {
     const id = searchParams.get('id');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [originalPost, setOriginalPost] = useState<blogService.BlogPost | null>(null);
+    const [contentMode, setContentMode] = useState<"general" | "html">("general");
     const [formData, setFormData] = useState({
         title: "",
         slug: "",
         excerpt: "",
         featuredImage: "",
-        content: ""
+        content: "",
+        category: "Article",
+        metaTitle: "",
+        metaDescription: "",
+        keywords: ""
     });
 
     useEffect(() => {
         const loadPost = async () => {
             if (!id) {
-                // router.push('/dashboard/admin/blog');
                 return;
             }
 
@@ -48,7 +58,11 @@ function EditBlogContent() {
                     slug: post.slug || '',
                     excerpt: post.excerpt || '',
                     featuredImage: post.featuredImage || '',
-                    content: post.content || ''
+                    content: post.content || '',
+                    category: post.category || 'Article',
+                    metaTitle: post.metaTitle || '',
+                    metaDescription: post.metaDescription || '',
+                    keywords: post.keywords || ''
                 });
             } catch (error) {
                 console.error("Failed to load post", error);
@@ -61,9 +75,33 @@ function EditBlogContent() {
         loadPost();
     }, [id, router]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleContentChange = (html: string) => {
+        setFormData(prev => ({ ...prev, content: html }));
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setSaving(true);
+        setUploadProgress(0);
+        try {
+            const url = await uploadImage(file, 'images/blog', (progress) => {
+                setUploadProgress(progress);
+            });
+            setFormData(prev => ({ ...prev, featuredImage: url }));
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload image.");
+        } finally {
+            setSaving(false);
+            setUploadProgress(null);
+        }
     };
 
     const handleSave = async () => {
@@ -93,7 +131,6 @@ function EditBlogContent() {
         setSaving(true);
         try {
             await blogService.publishPost(id);
-            // Optionally update local state or redirect
             router.push('/dashboard/admin/blog');
         } catch (error) {
             console.error(error);
@@ -163,14 +200,13 @@ function EditBlogContent() {
                                     onChange={handleChange}
                                     required
                                 />
-                                <Textarea
-                                    label="Content"
-                                    name="content"
-                                    placeholder="Write your post content here..."
-                                    rows={15}
+
+                                {/* Rich Text Editor with Mode Toggle */}
+                                <RichTextEditor
                                     value={formData.content}
-                                    onChange={handleChange}
-                                    required
+                                    onChange={handleContentChange}
+                                    mode={contentMode}
+                                    onModeChange={setContentMode}
                                 />
                             </CardBody>
                         </Card>
@@ -178,9 +214,25 @@ function EditBlogContent() {
 
                     {/* Sidebar Settings */}
                     <div className="space-y-6">
+                        {/* Post Settings */}
                         <Card>
                             <CardBody className="space-y-4">
                                 <h3 className="font-semibold text-gray-900 border-b pb-2">Post Settings</h3>
+
+                                {/* Category Dropdown */}
+                                <div className="w-full">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <select
+                                        name="category"
+                                        value={formData.category}
+                                        onChange={handleChange}
+                                        className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 border-gray-300 bg-white"
+                                    >
+                                        {CATEGORIES.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 <Input
                                     label="Slug"
@@ -200,13 +252,29 @@ function EditBlogContent() {
                                     onChange={handleChange}
                                 />
 
-                                <Input
-                                    label="Featured Image URL"
-                                    name="featuredImage"
-                                    placeholder="https://example.com/image.jpg"
-                                    value={formData.featuredImage}
-                                    onChange={handleChange}
-                                />
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Featured Image</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={saving}
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                    {uploadProgress !== null && (
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                                            <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+                                        </div>
+                                    )}
+                                    {formData.featuredImage && (
+                                        <div className="mt-4 relative w-full h-48">
+                                            <p className="text-sm text-gray-500 mb-2">Current Image:</p>
+                                            <div className="relative w-full h-full">
+                                                <Image src={formData.featuredImage} alt="Featured" fill className="rounded-md object-cover" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="pt-4 border-t">
                                     <p className="text-sm text-gray-500">
@@ -216,6 +284,47 @@ function EditBlogContent() {
                                         Created: {new Date(originalPost?.createdAt).toLocaleDateString()}
                                     </p>
                                 </div>
+                            </CardBody>
+                        </Card>
+
+                        {/* SEO Settings */}
+                        <Card>
+                            <CardBody className="space-y-4">
+                                <h3 className="font-semibold text-gray-900 border-b pb-2">🔍 SEO Settings</h3>
+
+                                <Input
+                                    label="Meta Title"
+                                    name="metaTitle"
+                                    placeholder="Custom title for search engines"
+                                    value={formData.metaTitle}
+                                    onChange={handleChange}
+                                    helperText="Leave empty to use post title"
+                                />
+
+                                <div className="w-full">
+                                    <Textarea
+                                        label="Meta Description"
+                                        name="metaDescription"
+                                        rows={3}
+                                        placeholder="Short description for search engines (150-160 chars recommended)"
+                                        value={formData.metaDescription}
+                                        onChange={handleChange}
+                                    />
+                                    <p className={`mt-1 text-xs ${formData.metaDescription.length > 160 ? "text-red-500" :
+                                            formData.metaDescription.length > 140 ? "text-yellow-600" : "text-gray-400"
+                                        }`}>
+                                        {formData.metaDescription.length}/160 characters
+                                    </p>
+                                </div>
+
+                                <Input
+                                    label="Keywords"
+                                    name="keywords"
+                                    placeholder="keyword1, keyword2, keyword3"
+                                    value={formData.keywords}
+                                    onChange={handleChange}
+                                    helperText="Comma-separated keywords for SEO"
+                                />
                             </CardBody>
                         </Card>
                     </div>

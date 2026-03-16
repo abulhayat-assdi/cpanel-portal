@@ -1,9 +1,13 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
-import { blogPosts } from "@/data/blogData";
+import { getPosts } from "@/services/blogService";
 import BlogList from "@/components/blog/BlogList";
 
-export default function BlogPage() {
+export const dynamic = "force-dynamic";
+
+export default async function BlogPage() {
+    const allPosts = await getPosts();
+    const publishedPosts = allPosts.filter(p => p.status === 'published');
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },
@@ -44,13 +48,13 @@ export default function BlogPage() {
 
             <main className="min-h-screen bg-white">
                 {/* 1. Page Header Section */}
-                <section className="w-full bg-white py-10 md:py-12">
+                <section className="w-full bg-white pt-6 pb-8 md:pt-8 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1f2937] mb-4">
                             Blog
                         </h1>
-                        <p className="text-lg md:text-xl text-[#6b7280] max-w-2xl mx-auto">
-                            Thoughtful articles on sales, marketing, ethics, and professional growth—focused on real-world learning and responsible practice.
+                        <p className="text-lg md:text-xl text-[#6b7280] max-w-3xl mx-auto">
+                            সেলস, মার্কেটিং, হিউম্যান সাইকোলজি এবং প্রফেশনাল গ্রোথ নিয়ে রিয়েল-লাইফ এক্সপেরিয়েন্স ও প্র্যাক্টিক্যাল লার্নিংয়ের এক সমৃদ্ধ সংগ্রহশালা।
                         </p>
                     </div>
                 </section>
@@ -58,16 +62,7 @@ export default function BlogPage() {
                 {/* 4. Blog Posts Grid Section */}
                 <section className="w-full bg-[#f9fafb] py-16 md:py-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                        <div className="text-center max-w-2xl mx-auto mb-12">
-                            <h2 className="text-2xl md:text-3xl font-bold text-[#1f2937] mb-4">
-                                Recent Articles
-                            </h2>
-                            <p className="text-[#6b7280] leading-relaxed">
-                                Explore our latest posts on sales, marketing, and professional growth.
-                            </p>
-                        </div>
-
-                        <BlogList posts={blogPosts} />
+                        <BlogList posts={publishedPosts} />
                     </div>
                 </section>
 

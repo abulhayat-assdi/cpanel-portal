@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
-import { getAllResources, addResource, Resource } from "@/services/resourceService";
+import { getAllResources, addResource, updateResource, deleteResource, Resource } from "@/services/resourceService";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Categories definition
@@ -21,6 +21,7 @@ export default function ResourcesPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
     // Form state
     const [newResource, setNewResource] = useState({
@@ -56,7 +57,7 @@ export default function ResourcesPage() {
         e.preventDefault();
 
         if (!user) {
-            alert("You must be logged in to add a resource.");
+            alert("You must be logged in to manage resources.");
             return;
         }
 
@@ -65,31 +66,63 @@ export default function ResourcesPage() {
             const resourceData = {
                 title: newResource.title,
                 category: newResource.category,
-                uploadedByUid: user.uid,
-                uploadedByName: userProfile?.displayName || user.displayName || "Unknown Teacher",
-                description: newResource.description || undefined,
+                uploadedByUid: editingResource ? editingResource.uploadedByUid : user.uid,
+                uploadedByName: editingResource ? editingResource.uploadedByName : (userProfile?.displayName || user.displayName || "Unknown Teacher"),
+                description: newResource.description?.trim() || undefined,
                 fileUrl: newResource.fileUrl,
             };
 
-            await addResource(resourceData);
+            if (editingResource) {
+                await updateResource(editingResource.id, resourceData);
+            } else {
+                await addResource(resourceData);
+            }
 
             // Refresh list
             await fetchResources();
 
             // Reset form
-            setIsModalOpen(false);
-            setNewResource({
-                title: "",
-                category: "Course Module",
-                description: "",
-                fileUrl: "",
-            });
+            handleCloseModal();
         } catch (error) {
-            console.error("Failed to add resource", error);
-            alert("Failed to add resource. Please try again.");
+            console.error("Failed to save resource", error);
+            alert("Failed to save resource. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditClick = (resource: Resource) => {
+        setEditingResource(resource);
+        setNewResource({
+            title: resource.title,
+            category: resource.category,
+            description: resource.description || "",
+            fileUrl: resource.fileUrl,
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (id: string, title: string) => {
+        if (confirm(`Are you sure you want to delete "${title}"?`)) {
+            try {
+                await deleteResource(id);
+                await fetchResources();
+            } catch (error) {
+                console.error("Failed to delete resource", error);
+                alert("Failed to delete resource. Please try again.");
+            }
+        }
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingResource(null);
+        setNewResource({
+            title: "",
+            category: "Course Module",
+            description: "",
+            fileUrl: "",
+        });
     };
 
     // Helper to get direct image URL from Google Drive link (reusing logic if needed, but for files we usually just open them)
@@ -148,8 +181,37 @@ export default function ResourcesPage() {
                             {/* Resource Cards Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {categoryResources.map((resource) => (
-                                    <Card key={resource.id} className="hover:shadow-lg transition-shadow h-full">
+                                    <Card key={resource.id} className="hover:shadow-lg transition-shadow h-full relative group">
                                         <CardBody className="p-6 flex flex-col h-full">
+                                            {/* Admin Controls (Top-Right) */}
+                                            {userProfile?.role === "admin" && (
+                                                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleEditClick(resource);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+                                                        title="Edit"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleDeleteClick(resource.id, resource.title);
+                                                        }}
+                                                        className="p-1.5 bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
+                                                        title="Delete"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                             {/* Title */}
                                             <h3 className="text-lg font-semibold text-[#1f2937] mb-3">
                                                 {resource.title}
@@ -201,9 +263,11 @@ export default function ResourcesPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-[#1f2937]">Add Resource</h2>
+                            <h2 className="text-2xl font-bold text-[#1f2937]">
+                                {editingResource ? "Edit Resource" : "Add Resource"}
+                            </h2>
                             <button
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={handleCloseModal}
                                 className="text-[#6b7280] hover:text-[#1f2937]"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +347,7 @@ export default function ResourcesPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={handleCloseModal}
                                     className="flex-1 px-4 py-2 border border-[#e5e7eb] text-[#6b7280] font-medium rounded-lg hover:bg-[#f9fafb] transition-colors"
                                 >
                                     Cancel
@@ -293,7 +357,7 @@ export default function ResourcesPage() {
                                     disabled={isSubmitting}
                                     className="flex-1 px-4 py-2 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors disabled:opacity-50"
                                 >
-                                    {isSubmitting ? "Adding..." : "Add Resource"}
+                                    {isSubmitting ? (editingResource ? "Updating..." : "Adding...") : (editingResource ? "Update Resource" : "Add Resource")}
                                 </button>
                             </div>
                         </form>

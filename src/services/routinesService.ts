@@ -1,10 +1,11 @@
-import { collection, query, orderBy, getDocs, Timestamp } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface ClassRoutine {
     id: string;
     title: string;
-    batch: string;
+    batch?: string;
+    date: string;
     fileUrl: string;
     uploadedByUid: string;
     uploadedByName: string;
@@ -27,6 +28,7 @@ export const getClassRoutines = async (): Promise<ClassRoutine[]> => {
                 id: doc.id,
                 title: data.title,
                 batch: data.batch,
+                date: data.date || "N/A",
                 fileUrl: data.fileUrl,
                 uploadedByUid: data.uploadedByUid,
                 uploadedByName: data.uploadedByName,
@@ -36,5 +38,22 @@ export const getClassRoutines = async (): Promise<ClassRoutine[]> => {
     } catch (error) {
         console.error("Error fetching class routines:", error);
         return [];
+    }
+};
+
+/**
+ * Add a new class routine to Firestore
+ */
+export const addClassRoutine = async (routine: Omit<ClassRoutine, "id" | "createdAt">): Promise<string> => {
+    try {
+        const routinesRef = collection(db, "class_routines");
+        const docRef = await addDoc(routinesRef, {
+            ...routine,
+            createdAt: serverTimestamp()
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding class routine:", error);
+        throw error;
     }
 };

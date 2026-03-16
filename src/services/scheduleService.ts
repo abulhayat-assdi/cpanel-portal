@@ -5,7 +5,9 @@ import {
     getDocs,
     addDoc,
     serverTimestamp,
-    orderBy
+    orderBy,
+    writeBatch,
+    doc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -63,6 +65,17 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
             console.error("Firestore fetch error (skipping override):", e);
         }
 
+        // 1.5 Fetch Newly Added Schedules from `class_schedules`
+        const customSchedules: ClassSchedule[] = [];
+        try {
+            const schedulesRef = collection(db, "class_schedules");
+            const qs = query(schedulesRef, where("teacherId", "==", teacherId));
+            const snap = await getDocs(qs);
+            snap.forEach(doc => customSchedules.push(doc.data() as ClassSchedule));
+        } catch (e) {
+            console.error("Error fetching custom schedules:", e);
+        }
+
         // 2. Fetch Base Schedule from Sheets API
         // 2. Mock Data Replacement for API (Free Plan Limitation)
         // const response = await fetch('/api/schedule', ...);
@@ -95,6 +108,9 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
 
         // const result = await response.json();
         let classes: ClassSchedule[] = Array.isArray(result.data) ? result.data : [];
+
+        // Merge custom schedules with mock/sheet schedules
+        classes = [...classes, ...customSchedules];
 
         // 3. Merge & Process Logic based on Date
         const d = new Date();
@@ -161,6 +177,104 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
     } catch (error) {
         console.error("Error fetching class schedule:", error);
         return [];
+    }
+};
+
+/**
+ * Fetch all class schedules from Firestore (For Admin)
+ */
+export const getAllClassesSchedules = async (): Promise<ClassSchedule[]> => {
+    try {
+        const schedulesRef = collection(db, "class_schedules");
+        // For admin overview, we could fetch all schedules, or maybe limit to current week.
+        // Returning all for now, frontend will filter/sort.
+        const snapshot = await getDocs(schedulesRef);
+        
+        const schedules: ClassSchedule[] = [];
+        snapshot.forEach(doc => {
+            schedules.push({ ...doc.data(), status: doc.data().status || "Scheduled" } as ClassSchedule);
+        });
+
+        // Compute dynamic status for these as well
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        return schedules.map(cls => {
+            const normalizedDate = getNormalizedDate(cls.date);
+            let computedStatus = "Upcoming";
+
+            if (normalizedDate === today) {
+                computedStatus = "Today";
+            } else if (normalizedDate < today) {
+                computedStatus = "Pending";
+            }
+
+            // Note: we're not checking completion overrides here for simplicity unless requested
+            // Normally you would fetch the 'classes' overrides as well and merge.
+            
+            return {
+                ...cls,
+                status: computedStatus as any
+            };
+        }).sort((a, b) => {
+            const dateA = getNormalizedDate(a.date);
+            const dateB = getNormalizedDate(b.date);
+            if (dateA < dateB) return -1;
+            if (dateA > dateB) return 1;
+            return 0;
+        });
+    } catch (error) {
+        console.error("Error fetching all class schedules:", error);
+        return [];
+    }
+};
+
+/**
+ * Bulk add class schedules to Firestore 'class_schedules' collection
+ */
+export const addBatchClassSchedules = async (schedules: Omit<ClassSchedule, "status">[]) => {
+    try {
+        // 1. Filter out empty rows (Require at least Date, Batch, Teacher ID)
+        const validSchedules = schedules.filter(s => s.date?.trim() && s.batch?.trim() && s.teacherId?.trim());
+
+        if (validSchedules.length === 0) return true;
+
+        // 2. Chunk processing (Firestore batch limit is 500 operations)
+        // We'll use 400 to be safe
+        const CHUNK_SIZE = 400;
+        const schedulesRef = collection(db, "class_schedules");
+        
+        const chunks = [];
+        for (let i = 0; i < validSchedules.length; i += CHUNK_SIZE) {
+            chunks.push(validSchedules.slice(i, i + CHUNK_SIZE));
+        }
+
+        // 3. Process batches concurrently
+        const batchPromises = chunks.map(chunk => {
+            const batch = writeBatch(db);
+            chunk.forEach(schedule => {
+                const newDocRef = doc(schedulesRef);
+                // Strip out any empty/extra fields we don't need or standardizing
+                batch.set(newDocRef, {
+                    date: schedule.date?.trim() || "",
+                    day: schedule.day?.trim() || "",
+                    batch: schedule.batch?.trim() || "",
+                    subject: schedule.subject?.trim() || "",
+                    time: schedule.time?.trim() || "",
+                    teacherId: schedule.teacherId?.trim() || "",
+                    teacherName: schedule.teacherName?.trim() || "",
+                    status: "Scheduled", // Default status
+                    createdAt: serverTimestamp()
+                });
+            });
+            return batch.commit();
+        });
+
+        await Promise.all(batchPromises);
+        return true;
+    } catch (error) {
+        console.error("Error saving batch schedules:", error);
+        throw error;
     }
 };
 

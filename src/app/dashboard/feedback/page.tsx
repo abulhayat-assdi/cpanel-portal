@@ -10,6 +10,18 @@ export default function FeedbackPage() {
     const { userProfile, user } = useAuth();
     const [feedbackList, setFeedbackList] = useState<feedbackService.Feedback[]>([]);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const feedbackFormUrl = typeof window !== 'undefined' ? `${window.location.origin}/student-feedback` : '/student-feedback';
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(feedbackFormUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
 
     const isAdmin = userProfile?.role === "admin";
 
@@ -44,14 +56,15 @@ export default function FeedbackPage() {
 
     const handleDelete = async (id: string) => {
         if (!user) return;
-        if (confirm("Are you sure you want to delete this feedback?")) {
-            try {
-                await feedbackService.deleteFeedback(id, user.uid);
-                // Optimistic update
-                setFeedbackList((prev) => prev.filter((f) => f.id !== id));
-            } catch (error) {
-                alert("Failed to delete feedback");
-            }
+        setDeleting(true);
+        try {
+            await feedbackService.deleteFeedback(id, user.uid);
+            setFeedbackList((prev) => prev.filter((f) => f.id !== id));
+            setConfirmDeleteId(null);
+        } catch (error) {
+            alert("Failed to delete feedback");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -95,11 +108,14 @@ export default function FeedbackPage() {
                             <input
                                 type="text"
                                 readOnly
-                                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/feedback`}
+                                value={feedbackFormUrl}
                                 className="flex-1 px-3 py-2 bg-white border border-[#059669] rounded text-sm text-[#1f2937]"
                             />
-                            <button className="px-4 py-2 bg-[#059669] text-white text-sm font-medium rounded hover:bg-[#10b981] transition-colors">
-                                📋 Copy
+                            <button
+                                onClick={handleCopy}
+                                className={`px-4 py-2 text-white text-sm font-medium rounded transition-colors ${copied ? 'bg-[#047857]' : 'bg-[#059669] hover:bg-[#10b981]'}`}
+                            >
+                                {copied ? '✅ Copied!' : '📋 Copy'}
                             </button>
                         </div>
                     </div>
@@ -180,14 +196,32 @@ export default function FeedbackPage() {
                                                             ✓ Approve
                                                         </button>
                                                     )}
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDelete(feedback.id)
-                                                        }
-                                                        className="px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-100 transition-colors"
-                                                    >
-                                                        🗑️ Delete
-                                                    </button>
+                                                    {confirmDeleteId === feedback.id ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm text-red-600 font-medium">মুছে ফেলবেন?</span>
+                                                            <button
+                                                                onClick={() => handleDelete(feedback.id)}
+                                                                disabled={deleting}
+                                                                className="px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                {deleting ? '...' : '✓ হ্যাঁ'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setConfirmDeleteId(null)}
+                                                                disabled={deleting}
+                                                                className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                                                            >
+                                                                ✕ না
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setConfirmDeleteId(feedback.id)}
+                                                            className="px-4 py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-lg hover:bg-red-100 transition-colors"
+                                                        >
+                                                            🗑️ Delete
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

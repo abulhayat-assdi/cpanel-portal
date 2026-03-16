@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, query, orderBy, Timestamp, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface Policy {
@@ -119,3 +119,64 @@ export const addMeetingMinute = async (data: {
     }
 };
 
+/**
+ * Update a policy
+ */
+export const updatePolicy = async (
+    id: string,
+    data: Partial<Omit<Policy, "id" | "createdAt" | "date">>
+): Promise<void> => {
+    try {
+        const policyRef = doc(db, "policies", id);
+        const updateData: any = { ...data };
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        await updateDoc(policyRef, updateData);
+    } catch (error) {
+        console.error("Error updating policy:", error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a policy
+ */
+export const deletePolicy = async (id: string): Promise<void> => {
+    try {
+        const policyRef = doc(db, "policies", id);
+        await deleteDoc(policyRef);
+    } catch (error) {
+        console.error("Error deleting policy:", error);
+        throw error;
+    }
+};
+
+/**
+ * Update a meeting minute
+ */
+export const updateMeetingMinute = async (
+    id: string,
+    data: Partial<Omit<MeetingMinute, "id" | "createdAt" | "date">>
+): Promise<void> => {
+    try {
+        const meetingRef = doc(db, "meeting_minutes", id);
+        const updateData: any = { ...data };
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        await updateDoc(meetingRef, updateData);
+    } catch (error) {
+        console.error("Error updating meeting minute:", error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a meeting minute
+ */
+export const deleteMeetingMinute = async (id: string): Promise<void> => {
+    try {
+        const meetingRef = doc(db, "meeting_minutes", id);
+        await deleteDoc(meetingRef);
+    } catch (error) {
+        console.error("Error deleting meeting minute:", error);
+        throw error;
+    }
+};

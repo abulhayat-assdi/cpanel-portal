@@ -77,11 +77,11 @@ export default function AIFAQSection() {
     };
 
     return (
-        <section className="w-full bg-[#f9fafb] py-16 md:py-24 border-t border-gray-100">
+        <section className="w-full bg-[#f9fafb] pt-4 pb-6 md:pt-6 md:pb-8 border-t border-gray-100">
             <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
 
                 {/* 1. Section Header */}
-                <div className="text-center mb-10">
+                <div className="text-center mb-6">
                     <h2 className="text-3xl md:text-3xl font-semibold text-[#1f2937] mb-3">
                         Ask Our AI Assistant
                     </h2>

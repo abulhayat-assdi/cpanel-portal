@@ -62,53 +62,49 @@ export default function Header({
     return (
         <header
             className={cn(
-                "w-full transition-all duration-300 z-50",
+                "w-full transition-all duration-300 z-50 px-4 pt-4 sm:px-6 lg:px-8",
                 transparent
                     ? "fixed top-0"
-                    : "sticky top-0 bg-white border-b border-[#e5e7eb]",
-                isTransparent
-                    ? "bg-transparent border-transparent py-4"
-                    : transparent
-                        ? "bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm py-2" // Glass state when scrolled
-                        : "", // Default state handled above
+                    : "sticky top-0",
                 className
             )}
         >
-            <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className={cn(
+                "max-w-7xl mx-auto px-4 lg:px-6 rounded-md md:rounded-full border border-gray-200 shadow-sm transition-colors duration-300",
+                isTransparent 
+                    ? "bg-white/90 backdrop-blur-md" 
+                    : "bg-[#e5e7eb]" // Base light gray pill background
+            )}>
                 <div className="flex items-center justify-between h-20">
                     {/* Left - Brand */}
                     <Link
                         href="/"
                         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                        {/* Logo Icon — dark pill so white logo is always visible */}
-                        <div className="bg-[#0D1B2A] rounded-xl p-1.5">
-                            <BrandLogo size={38} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
+                        <div className="bg-[#0D1B2A] rounded-xl p-1.5 flex lg:hidden">
+                            <BrandLogo size={28} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
+                        </div>
+                        <div className="bg-[#0D1B2A] rounded-xl p-1.5 hidden lg:block">
+                            <BrandLogo size={32} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
                         </div>
                         <span className={cn(
-                            "text-lg font-semibold transition-colors",
-                            isTransparent ? "text-white" : "text-[#1f2937]"
+                            "hidden md:block text-lg font-bold transition-colors text-[#1f2937]"
                         )}>
                             {brandText}
                         </span>
                     </Link>
 
-
                     {/* Desktop Navigation - Centered */}
-                    <nav className="hidden lg:flex items-center justify-center flex-1 gap-6 mx-8">
+                    <nav className="hidden lg:flex items-center justify-center flex-1 gap-6 mx-4">
                         {navLinks.map((link, index) => (
                             <Link
                                 key={index}
                                 href={link.href}
                                 className={cn(
-                                    "text-sm font-medium transition-colors duration-200 ease-out",
+                                    "text-sm font-semibold transition-all duration-200 ease-out py-6 border-b-2 relative top-[1px]",
                                     link.isActive
-                                        ? isTransparent
-                                            ? "text-[#4CAF50]"
-                                            : "text-[#4CAF50]"
-                                        : isTransparent
-                                            ? "text-white/90 hover:text-white"
-                                            : "text-[#4b5563] hover:text-[#4CAF50]"
+                                        ? "text-[#059669] border-[#059669]"
+                                        : "text-[#374151] border-transparent hover:text-[#059669] hover:border-[#059669]/50"
                                 )}
                             >
                                 {link.label}
@@ -116,31 +112,22 @@ export default function Header({
                         ))}
                     </nav>
 
-                    {/* Desktop CTA */}
-                    <div className="hidden lg:flex items-center gap-3">
-                        {/* Secondary CTA - made text-only or subtle for header to reduce noise, or keep as button if needed. 
-                            Keeping as button but checking style. */}
+                    {/* Right Components */}
+                    <div className="hidden lg:flex items-center gap-2 md:gap-4">
+                        {/* Secondary CTA */}
                         {secondaryCtaText && (
                             <button
                                 onClick={handleSecondaryClick}
-                                className={cn(
-                                    "px-5 py-2 text-sm font-bold rounded-full transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2",
-                                    isTransparent
-                                        ? "bg-transparent text-white border border-white/40 hover:bg-white/10 hover:border-white focus:ring-white"
-                                        : "bg-transparent text-[#4CAF50] border border-[#4CAF50] hover:bg-[#F1F8E9] focus:ring-[#4CAF50]"
-                                )}
+                                className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                             >
                                 {secondaryCtaText}
                             </button>
                         )}
+
+                        {/* Primary CTA */}
                         <button
                             onClick={handleCtaClick}
-                            className={cn(
-                                "px-5 py-2 text-sm font-bold rounded-full transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2",
-                                isTransparent
-                                    ? "bg-[#4CAF50] text-white hover:bg-[#43A047] focus:ring-[#4CAF50]" // Green even on transparent
-                                    : "bg-[#4CAF50] text-white hover:bg-[#43A047] focus:ring-[#4CAF50]"
-                            )}
+                            className="px-5 py-2.5 text-sm font-bold rounded-md bg-[#059669] text-white hover:bg-[#047857] shadow-sm transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                         >
                             {ctaText}
                         </button>

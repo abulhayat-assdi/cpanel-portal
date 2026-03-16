@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Reveal from "./Reveal";
+import Image from "next/image";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 interface HeroSectionProps {
     badge?: string;
@@ -26,9 +28,9 @@ export default function HeroSection({
     className = "",
 }: HeroSectionProps) {
     const backgroundImages = [
-        "/images/home/hero-slide-1.jpg",
-        "/images/home/hero-slide-2.jpg",
-        "/images/home/audience-bg.jpg",
+        getImageUrl("home/hero-slide-1.jpg"),
+        getImageUrl("home/hero-slide-2.jpg"),
+        getImageUrl("home/audience-bg.jpg"),
     ];
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -58,10 +60,13 @@ export default function HeroSection({
                             index === currentIndex ? "opacity-100" : "opacity-0"
                         )}
                     >
-                        <img
+                        <Image
                             src={image}
                             alt={`Background ${index + 1}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            priority={index === 0}
+                            className="object-cover"
+                            sizes="100vw"
                         />
                         {/* Overlay per image to ensure consistent readability */}
                         <div className="absolute inset-0 bg-slate-900/50" />

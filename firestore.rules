@@ -46,8 +46,20 @@ service cloud.firestore {
       allow read, write: if isAuth();
     }
 
+    // Class Schedules
+    match /class_schedules/{scheduleId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
     // Resources Library
     match /resources/{resourceId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Batch Info
+    match /batch_info/{docId} {
       allow read: if isAuth();
       allow write: if isAdmin();
     }
@@ -91,6 +103,12 @@ service cloud.firestore {
        🌐 PUBLIC WEBSITE COLLECTIONS
        (No login required for read)
     ====================================================== */
+
+    // Blog Comments (Public read, write, update for likes/replies)
+    match /blogComments/{commentId} {
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
 
     // Blog Posts
     match /blog_posts/{postId} {

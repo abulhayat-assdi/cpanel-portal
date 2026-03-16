@@ -3,6 +3,8 @@
 import { cn } from "@/lib/utils";
 import { useRef, useEffect, useState } from "react";
 import Reveal from "./Reveal";
+import { getImageUrl } from "@/lib/getImageUrl";
+import Image from "next/image";
 
 interface AudienceCard {
     icon: React.ReactNode;
@@ -84,10 +86,12 @@ export default function TargetAudience({
                     className="absolute inset-0 w-full h-full"
                     style={{ transform: `translateY(${scrollY * 0.05}px)` }} // Slow parallax
                 >
-                    <img
-                        src="/images/home/audience-bg.jpg"
+                    <Image
+                        src={getImageUrl("home/audience-bg.jpg")}
                         alt="Professional team collaboration"
-                        className="w-full h-[120%] object-cover opacity-[0.15]"
+                        fill
+                        className="object-cover opacity-[0.15]"
+                        sizes="100vw"
                     />
                 </div>
                 {/* Gradient overlay blended with section background */}

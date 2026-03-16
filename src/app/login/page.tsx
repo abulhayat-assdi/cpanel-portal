@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -107,21 +108,8 @@ export default function LoginPage() {
             <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
                 {/* Icon */}
                 <div className="flex justify-center mb-6">
-                    <div className="w-12 h-12 bg-[#d1fae5] rounded-lg flex items-center justify-center">
-                        <svg
-                            className="w-7 h-7 text-[#059669]"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2.5}
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-                            />
-                            <polyline points="22,12 18,8 13,13 9,9" />
-                        </svg>
+                    <div className="bg-[#0D1B2A] rounded-2xl p-3 flex items-center justify-center shadow-sm">
+                        <BrandLogo size={52} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
                     </div>
                 </div>
 

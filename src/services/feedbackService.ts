@@ -82,15 +82,15 @@ export const deleteFeedback = async (id: string, adminUid: string) => {
         const feedbackRef = doc(db, "feedback", id);
         await deleteDoc(feedbackRef);
 
-        // Log Activity
-        await logActivity(
+        // Log Activity (best-effort, don't fail delete if logging fails)
+        logActivity(
             adminUid,
             "ADMIN",
             "FEEDBACK_DELETED",
             "feedback",
             id,
             "Admin deleted a student feedback"
-        );
+        ).catch((err) => console.warn("Activity log failed (non-critical):", err));
 
         return true;
     } catch (error) {

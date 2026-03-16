@@ -1,5 +1,24 @@
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getImageUrl } from "@/lib/getImageUrl";
+
+const TEACHER_ORDER = [
+    "Golam Kibria",
+    "Shaibal Shariar",
+    "Mohammad Abu Zabar Rezvhe",
+    "Md. Nesar Uddin",
+    "Abul Hayat",
+    "M M Naim Amran"
+];
+
+const TEACHER_IMAGES: Record<string, string> = {
+    "Golam Kibria": "instructors/golam-kibria.jpeg",
+    "Shaibal Shariar": "instructors/shaibal-shariar.jpg",
+    "Mohammad Abu Zabar Rezvhe": "instructors/abu-zabar-rezvhe.jpg",
+    "Md. Nesar Uddin": "instructors/nesar-uddin.jpg",
+    "Abul Hayat": "instructors/abul-hayat.jpg",
+    "M M Naim Amran": "instructors/naim-amran.jpg",
+};
 
 export interface Teacher {
     id: string; // Firestore Doc ID
@@ -21,13 +40,29 @@ export const getAllTeachers = async (): Promise<Teacher[]> => {
         const teachersRef = collection(db, "teachers");
         const snapshot = await getDocs(teachersRef);
 
-        const teachers = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Teacher));
+        const teachers = snapshot.docs.map(doc => {
+            const data = doc.data() as Omit<Teacher, 'id'>;
+            // Fallback to public images if their profileImageUrl is missing
+            if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
+                data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
+            }
+            return {
+                id: doc.id,
+                ...data
+            } as Teacher;
+        });
 
-        // Sort by name client-side to avoid Firestore index requirements
-        return teachers.sort((a, b) => a.name.localeCompare(b.name));
+        // Sort by custom required order first, then alphabetical
+        return teachers.sort((a, b) => {
+            const indexA = TEACHER_ORDER.indexOf(a.name);
+            const indexB = TEACHER_ORDER.indexOf(b.name);
+
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+
+            return a.name.localeCompare(b.name);
+        });
     } catch (error) {
         console.error("Error fetching teachers:", error);
         return [];

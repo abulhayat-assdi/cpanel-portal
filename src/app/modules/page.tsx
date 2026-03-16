@@ -35,83 +35,92 @@ export default function ModulesPage() {
     const coreModules = [
         {
             title: "Sales Mastery",
+            pdfLink: "https://drive.google.com/file/d/1vmntDfYlD8ehHARP2K9_E4h1LIfz9osY/view?usp=drive_link",
             bullets: [
-                "On-field practical sales & in-store customer experience",
-                "Active listening and respectful problem solving",
-                "Effective communication & objection handling",
-                "Office sales (B2B) & CRM strategy",
+                "Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট সেল করার সাইকোলজি আয়ত্ত করা।",
+                "কাস্টমারের যেকোনো অবজেকশন স্মার্টলি এবং পেশাদারিত্বের সাথে হ্যান্ডেল করা।",
+                "কোনো বিরক্তিকর অ্যাপ্রোচ ছাড়াই B2B এবং B2C ডিল ক্র্যাক করার স্ট্র্যাটেজি।",
+                "সেলসকে একটি 'আমানাহ' হিসেবে নিয়ে কাস্টমারের সাথে লং-টার্ম ট্রাস্ট বিল্ড করা।"
             ],
         },
         {
             title: "Career Planning & Branding",
+            pdfLink: "https://drive.google.com/file/d/1qqTxOoxeSD6Xpbq8wHmJ30SD_3Feu_Q8/view?usp=drive_link",
             bullets: [
-                "Writing professional CVs and winning resumes",
-                "Building a strong personal brand and portfolio",
-                "Interview preparation and confident presentation",
-                "Taking responsibility for career or entrepreneurial growth",
+                "এমন একটি Winning CV তৈরি করা যা সহজেই ইন্টারভিউ কল নিয়ে আসবে।",
+                "নিজেকে একটি পাওয়ারফুল Personal Brand হিসেবে এস্টাবলিশ করা।",
+                "ইন্টারভিউ বোর্ডে 100% কনফিডেন্সের সাথে নিজেকে প্রেজেন্ট করার সিক্রেট হ্যাকস।",
+                "নিজের ক্যারিয়ার বা অন্ট্রাপ্রেনিউরিয়াল জার্নির পুরো কন্ট্রোল নিজের হাতে নেওয়া।"
             ],
         },
         {
             title: "Customer Service Excellence",
+            pdfLink: "https://drive.google.com/file/d/18hfi3_fYNIizt2ARD6SHKPCJRYKFva7M/view?usp=drive_link",
             bullets: [
-                "Managing customer queries and providing proactive support",
-                "Handling difficult customers with empathy and Sabr",
-                "Building long-term relationships and brand loyalty",
-                "Ensuring fairness (Adl) and excellence (Ihsan) in service",
+                "রাগান্বিত কাস্টমারকেও আপনার ব্র্যান্ডের লয়্যাল ফ্যানে পরিণত করার সাইকোলজিক্যাল টেকনিক।",
+                "Empathy এবং সবরের সাথে যেকোনো ডিফিকাল্ট সিচুয়েশন হ্যান্ডেল করা।",
+                "প্রো-অ্যাকটিভ সাপোর্ট দিয়ে Client-এর সাথে স্ট্রং রিলেশনশিপ বিল্ড করা।",
+                "কাস্টমার সার্ভিসের ক্ষেত্রে ইহসান (Excellence) এবং আদল (Fairness) নিশ্চিত করা。"
             ],
         },
         {
             title: "AI for Digital Marketers",
+            pdfLink: "https://drive.google.com/file/d/1A-9GAD-NJSdPjsVcwiMPzzSGexFvSR7Z/view?usp=drive_link",
             bullets: [
-                "Leveraging AI tools for efficient content creation",
-                "Mastering Canva for professional branding & ad design",
-                "Automating marketing workflows effectively",
-                "Using technology responsibly without misleading exaggeration",
+                "লেটেস্ট AI Tools ব্যবহার করে কাজের স্পিড এবং প্রোডাক্টিভিটি 10x বাড়িয়ে ফেলা।",
+                "Canva মাস্টার করে আইক্যাচি ব্র্যান্ডিং এবং সোশ্যাল মিডিয়া অ্যাড ডিজাইন করা।",
+                "বোরিং মার্কেটিং ওয়ার্কফ্লো অটোমেট করে স্ট্র্যাটেজি এবং ব্রেইনস্টর্মিংয়ে ফোকাস করা।",
+                "কোনো ফেক হাইপ বা ধোঁকা ছাড়াই রেসপন্সিবিলিটির সাথে টেকনোলজি ইউজ করা।"
             ],
         },
         {
             title: "Digital Marketing",
+            pdfLink: "https://drive.google.com/file/d/1e2kmcTW0HgQjrKoqYBiPdz-2hDyF2JlG/view?usp=drive_link",
             bullets: [
-                "Social media marketing & comprehensive strategy",
-                "Mastering Meta Ads Manager (Facebook & Instagram)",
-                "Referral sales and community-based growth",
-                "Ethical promotion and audience targeting",
+                "ম্যাক্সিমাম ROI-এর জন্য Meta Ads (Facebook & Instagram) এর নাড়িভুঁড়ি আয়ত্ত করা।",
+                "বিজনেস গ্রোথের জন্য স্ক্র্যাচ থেকে পাওয়ারফুল সোশ্যাল মিডিয়া স্ট্র্যাটেজি দাঁড় করানো।",
+                "কমিউনিটি বিল্ড-আপ এবং রেফারেলের মাধ্যমে জেনুইন অর্গানিক গ্রোথ আনা।",
+                "এথিক্যাল প্রমোশন এবং প্রিসাইজ অডিয়েন্স টার্গেটিংয়ের মাধ্যমে রিয়েল সেলস জেনারেট করা।"
             ],
         },
         {
-            title: "MS Office Applications",
+            title: "Business Management Tools (MS Office)",
+            pdfLink: "https://drive.google.com/file/d/1BkuiUSbiNHXa1rVTC4KizASlWpQeCHT2/view?usp=drive_link",
             bullets: [
-                "MS Word for professional business documentation",
-                "MS Excel for sales tracking, data entry, and reporting",
-                "MS PowerPoint for creating persuasive business pitches",
-                "Managing daily corporate tasks with efficiency",
+                "ডেটা ট্র্যাকিং, সেলস রিপোর্ট এবং অ্যানালিটিক্সের জন্য MS Excel-এ প্রো হয়ে ওঠা।",
+                "MS Word ব্যবহার করে ফ্ললেস কর্পোরেট ডকুমেন্টেশন এবং প্রপোজাল রেডি করা।",
+                "ইনভেস্টর বা ক্লায়েন্টকে ইমপ্রেস করতে MS PowerPoint-এ কিলার পিচ ডেক বানানো।",
+                "কর্পোরেট ওয়ার্কফ্লো এবং ডেইলি টাস্কগুলো এফিশিয়েন্টলি এবং দ্রুত ম্যানেজ করা।"
             ],
         },
         {
             title: "Landing Page & Content Marketing",
+            pdfLink: "https://drive.google.com/file/d/1244hXPDXwIxyLZ2omEwuQkmFjjEmnMl0/view?usp=drive_link",
             bullets: [
-                "Designing high-converting landing pages",
-                "Copywriting with clear, truthful messaging",
-                "Creating content strategies that deliver real value",
-                "A/B testing, performance tracking, and conversion",
+                "High-Converting Landing Page ডিজাইন করা যা ভিজিটরকে পেইং কাস্টমারে রূপান্তর করবে।",
+                "100% সত্যতা বজায় রেখে ম্যাগনেটিক Copywriting করা যা ইজিলি সেলস আনবে।",
+                "অডিয়েন্সকে রিয়েল ভ্যালু প্রোভাইড করে এমন কিলার কন্টেন্ট স্ট্র্যাটেজি ডেভেলপ করা।",
+                "A/B টেস্টিং এবং পারফরম্যান্স ট্র্যাকিংয়ের মাধ্যমে মার্কেটিং ক্যাম্পেইন স্কেল করা।"
             ],
         },
         {
             title: "Business English",
+            pdfLink: "https://drive.google.com/file/d/1H2hl8DkQpbkKzQo4jChhcpj__EpoRo2n/view?usp=drive_link",
             bullets: [
-                "Professional email writing and corporate correspondence",
-                "Confident speaking for interviews and client meetings",
-                "Essential vocabulary for sales and marketing",
-                "Overcoming the fear of speaking in English",
+                "পাবলিক স্পিকিংয়ের ভয় কাটিয়ে সবার সামনে কনফিডেন্টলি কথা বলা।",
+                "ক্লায়েন্ট মিটিং বা জব ইন্টারভিউতে প্রফেশনাল ইংলিশে স্মার্টলি কমিউনিকেট করা।",
+                "কর্পোরেট লেভেলের প্রফেশনাল ইমেইল লেখা যা দ্রুত রিপ্লাই নিয়ে আসবে।",
+                "সেলস, মার্কেটিং এবং কর্পোরেট দুনিয়ার হাই-ভ্যালু ভোকাবুলারি আয়ত্ত করা।"
             ],
         },
         {
             title: "Dawah & Business Ethics",
+            pdfLink: "https://drive.google.com/file/d/1ddTaQF84xSSswcEixh84F1RS51C6HPkn/view?usp=drive_link",
             bullets: [
-                "Understanding marketing as truth and Dawah",
-                "Applying Ikhlas (Sincerity) in daily business decisions",
-                "Avoiding haram practices, shortcuts, and deception",
-                "Balancing professional excellence with Islamic character",
+                "মার্কেটিংকে শুধুমাত্র প্রমোশন নয়, বরং সত্য ও 'দাওয়াহ' হিসেবে প্রেজেন্ট করা।",
+                "বিজনেসের প্রতিদিনের ডিসিশনে ইখলাস (Sincerity) এবং শতভাগ সততা অ্যাপ্লাই করা।",
+                "কর্পোরেট দুনিয়ার ফেক শর্টকাট এবং হারাম প্র্যাকটিসগুলো থেকে 100% দূরে থাকা।",
+                "প্রফেশনাল সাকসেস এবং ইসলামিক ক্যারেক্টারের মধ্যে একটি পারফেক্ট ব্যালেন্স তৈরি করা।"
             ],
         },
     ];
@@ -125,20 +134,20 @@ export default function ModulesPage() {
                 ctaText="Enroll"
             />
 
-            <main className="min-h-screen bg-white">
-
+            <main className="min-h-screen bg-[#fafaf9] flex flex-col">
+                {/* Clean Page Header */}
+                <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
+                        Our Core Modules
+                    </h1>
+                    <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
+                        A comprehensive journey designed to build your skills from the ground up, combining theory with real-world practice.
+                    </p>
+                </div>
 
                 {/* 3. Core Modules Section */}
-                <section className="w-full bg-white py-16 md:py-20">
+                <section className="w-full pb-16 md:pb-24 flex-grow relative z-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                        <div className="text-center max-w-2xl mx-auto mb-16">
-                            <h2 className="text-2xl md:text-3xl font-bold text-[#1f2937] mb-4">
-                                Core Learning Modules
-                            </h2>
-                            <p className="text-[#6b7280] leading-relaxed">
-                                A step-by-step journey designed to build your skills from the ground up.
-                            </p>
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {coreModules.map((module, index) => (
                                 <div
@@ -146,10 +155,10 @@ export default function ModulesPage() {
                                     className={`
                                         group relative bg-white rounded-2xl overflow-hidden border
                                         transition-all duration-300 ease-out
-                                        hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-100/60
+                                        hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] shadow-sm
                                         ${index === 0
-                                            ? 'border-[#059669]/30 shadow-md ring-1 ring-[#059669]/10'
-                                            : 'border-[#e5e7eb] shadow-sm hover:border-[#059669]/20'
+                                            ? 'border-[#059669]/20 shadow-[0_4px_20px_rgba(5,150,105,0.08)] ring-1 ring-[#059669]/5'
+                                            : 'border-gray-100 hover:border-[#059669]/20'
                                         }
                                     `}
                                 >
@@ -164,13 +173,11 @@ export default function ModulesPage() {
                                     {/* Card body */}
                                     <div className="p-8">
                                         {/* Header row */}
-                                        <div className="flex items-center justify-between mb-6">
-                                            {/* Module number pill */}
-                                            <div className={`
-                                                flex items-center gap-2
-                                            `}>
+                                        <div className="flex items-start justify-between mb-4 gap-2">
+                                            {/* Module number and title */}
+                                            <div className="flex items-start gap-3">
                                                 <span className={`
-                                                    w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold
+                                                    w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5
                                                     transition-all duration-300
                                                     ${index === 0
                                                         ? 'bg-[#059669] text-white'
@@ -179,25 +186,16 @@ export default function ModulesPage() {
                                                 `}>
                                                     {String(index + 1).padStart(2, '0')}
                                                 </span>
-                                                <span className={`
-                                                    text-xs font-bold tracking-widest uppercase
-                                                    ${index === 0 ? 'text-[#059669]' : 'text-[#9ca3af] group-hover:text-[#059669]'}
-                                                    transition-colors duration-300
-                                                `}>
-                                                    Module
-                                                </span>
+                                                <h3 className="text-xl font-bold text-[#1f2937] group-hover:text-[#059669] transition-colors duration-300 leading-snug pt-0.5">
+                                                    {module.title}
+                                                </h3>
                                             </div>
                                             {index === 0 && (
-                                                <span className="bg-[#ecfdf5] text-[#059669] text-xs font-semibold px-2.5 py-1 rounded-full">
+                                                <span className="bg-[#ecfdf5] text-[#059669] text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0">
                                                     Foundation
                                                 </span>
                                             )}
                                         </div>
-
-                                        {/* Title */}
-                                        <h3 className="text-xl font-bold text-[#1f2937] mb-4 group-hover:text-[#059669] transition-colors duration-300 leading-snug">
-                                            {module.title}
-                                        </h3>
 
                                         {/* Bullet list */}
                                         <ul className="space-y-2.5">
@@ -219,6 +217,36 @@ export default function ModulesPage() {
                                                 </li>
                                             ))}
                                         </ul>
+
+                                        {/* See Full Module Button */}
+                                        <div className="mt-8 pt-6 border-t border-gray-100">
+                                            <a
+                                                href={module.pdfLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`
+                                                    inline-flex items-center justify-center w-full px-4 py-2.5 
+                                                    text-sm font-medium rounded-xl transition-all duration-300 border
+                                                    group/btn relative overflow-hidden
+                                                    ${index === 0
+                                                        ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
+                                                        : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
+                                                    }
+                                                `}
+                                            >
+                                                <span className="relative z-10 font-semibold tracking-wide">
+                                                    See Full Module
+                                                </span>
+                                                <svg
+                                                    className="w-4 h-4 ml-2 mt-[1px] group-hover/btn:translate-x-1 transition-transform relative z-10"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                </svg>
+                                            </a>
+                                        </div>
                                     </div>
 
                                     {/* Bottom hover glow */}

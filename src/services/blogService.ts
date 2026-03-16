@@ -19,6 +19,10 @@ export interface BlogPost {
     excerpt: string;
     featuredImage?: string;
     content: string;
+    category?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    keywords?: string;
     status: 'draft' | 'published';
     createdAt: any; // Timestamp
     publishedAt?: any; // Timestamp

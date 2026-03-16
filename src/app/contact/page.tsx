@@ -81,9 +81,11 @@ export default function ContactPage() {
 
             <main className="min-h-screen bg-white">
 
+                {/* 1. AI Powered FAQ Section */}
+                <AIFAQSection />
 
                 {/* 2. Contact Information Section */}
-                <section className="w-full bg-[#f9fafb] py-16 md:py-20">
+                <section className="w-full bg-[#f9fafb] pt-4 pb-8 md:pt-6 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="text-center max-w-2xl mx-auto mb-12">
                             <h2 className="text-2xl md:text-3xl font-bold text-[#1f2937] mb-4">
@@ -117,9 +119,146 @@ export default function ContactPage() {
                     </div>
                 </section>
 
-                {/* 3. AI Powered FAQ Section (Replaces Inquiry Form) */}
-                <AIFAQSection />
+                {/* 3. Social Presence Section */}
+                <section className="w-full bg-white py-8 md:py-10">
+                    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+                        <div className="text-center max-w-2xl mx-auto mb-12">
+                            <h2 className="text-2xl md:text-3xl font-bold text-[#1f2937] mb-4">
+                                Our Social Presence
+                            </h2>
+                            <p className="text-[#6b7280] leading-relaxed">
+                                আমাদের সাথে সোশ্যাল মিডিয়ায় যুক্ত থাকুন এবং সর্বশেষ আপডেট পান।
+                            </p>
+                        </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+
+                            {/* Course Social Links */}
+                            <div className="bg-[#f9fafb] rounded-2xl p-8 border border-[#e5e7eb] shadow-sm">
+                                <h3 className="text-lg font-bold text-[#1f2937] mb-6 flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-[#059669] flex items-center justify-center text-white text-sm">📘</span>
+                                    As Sunnah Skill Development Institute
+                                </h3>
+                                <div className="flex flex-col gap-4">
+                                    {/* Facebook */}
+                                    <a
+                                        href="https://www.facebook.com/assunnahskill"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#1877F2] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">Facebook Page</p>
+                                            <p className="text-xs text-[#6b7280]">facebook.com/assunnahskill</p>
+                                        </div>
+                                    </a>
+
+                                    {/* YouTube */}
+                                    <a
+                                        href="https://www.youtube.com/@assunnahskill"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#FF0000] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">YouTube Channel</p>
+                                            <p className="text-xs text-[#6b7280]">youtube.com/@assunnahskill</p>
+                                        </div>
+                                    </a>
+                                    {/* Website */}
+                                    <a
+                                        href="https://asm-internal-portal.web.app"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#059669] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">Official Website</p>
+                                            <p className="text-xs text-[#6b7280]">asm-internal-portal.web.app</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            {/* As Sunnah Foundation Links */}
+                            <div className="bg-[#f9fafb] rounded-2xl p-8 border border-[#e5e7eb] shadow-sm">
+                                <h3 className="text-lg font-bold text-[#1f2937] mb-6 flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-[#059669] flex items-center justify-center text-white text-sm">🕌</span>
+                                    As Sunnah Foundation
+                                </h3>
+                                <div className="flex flex-col gap-4">
+                                    {/* Facebook */}
+                                    <a
+                                        href="https://www.facebook.com/assunnahfoundationbd"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#1877F2] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">Facebook Page</p>
+                                            <p className="text-xs text-[#6b7280]">facebook.com/assunnahfoundationbd</p>
+                                        </div>
+                                    </a>
+                                    {/* YouTube */}
+                                    <a
+                                        href="https://www.youtube.com/@As-Sunnah-Foundation-BD"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#FF0000] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">YouTube Channel</p>
+                                            <p className="text-xs text-[#6b7280]">youtube.com/@As-Sunnah-Foundation-BD</p>
+                                        </div>
+                                    </a>
+                                    {/* Website */}
+                                    <a
+                                        href="https://assunnahfoundation.org"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-[#e5e7eb] hover:border-[#059669] hover:shadow-md transition-all duration-200 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-[#059669] flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#1f2937] group-hover:text-[#059669] transition-colors">Official Website</p>
+                                            <p className="text-xs text-[#6b7280]">assunnahfoundation.org</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
 
             </main>
 

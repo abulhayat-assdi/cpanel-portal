@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Card, { CardBody } from "./Card";
 import { Teacher } from "@/services/teacherService";
+import Image from "next/image";
 
 interface TeacherCardProps {
     teacher: Teacher;
@@ -58,12 +59,14 @@ export default function TeacherCard({ teacher, onEdit, onDelete }: TeacherCardPr
 
             <CardBody className="flex flex-col items-center text-center p-6">
                 {/* Profile Image - Simple Circle with Border */}
-                <div className="w-24 h-24 rounded-full overflow-hidden shadow-sm mb-4 border-4 border-white ring-1 ring-gray-100">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-sm mb-4 border-4 border-white ring-1 ring-gray-100">
                     {teacher.profileImageUrl ? (
-                        <img
+                        <Image
                             src={getImageUrl(teacher.profileImageUrl)}
                             alt={teacher.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="96px"
                         />
                     ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
