@@ -139,7 +139,7 @@ export default function Header({
                         className={cn(
                             "lg:hidden p-2 rounded-lg transition-colors",
                             isTransparent
-                                ? "text-white hover:bg-white/10"
+                                ? "text-[#4CAF50] hover:bg-[#4CAF50]/10"
                                 : "text-[#6b7280] hover:text-[#1f2937] hover:bg-[#f3f4f6]"
                         )}
                         aria-label="Toggle menu"

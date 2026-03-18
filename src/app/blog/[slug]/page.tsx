@@ -1,7 +1,7 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
-import { getPosts } from "@/services/blogService";
+import { getPostBySlug, getPosts } from "@/services/blogService";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -13,12 +13,11 @@ type Props = {
     params: Promise<{ slug: string }>;
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // revalidate at most every hour
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const allPosts = await getPosts();
-    const post = allPosts.find((p) => p.slug === slug && p.status === 'published');
+    const post = await getPostBySlug(slug);
 
     if (!post) {
         return { title: "Post Not Found" };
@@ -58,8 +57,7 @@ export async function generateStaticParams() {
 
 export default async function BlogPostPage({ params }: Props) {
     const { slug } = await params;
-    const allPosts = await getPosts();
-    const post = allPosts.find((p) => p.slug === slug && p.status === 'published');
+    const post = await getPostBySlug(slug);
 
     if (!post) {
         notFound();
@@ -159,8 +157,6 @@ export default async function BlogPostPage({ params }: Props) {
                         {post.id && <BlogComments blogId={post.id} />}
                     </article>
                 </section>
-
-
 
                 {/* 6. Article Footer Navigation */}
                 <section className="w-full bg-white py-12 md:py-16">

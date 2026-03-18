@@ -3,7 +3,7 @@ import Footer from "@/components/ui/Footer";
 import { getPosts } from "@/services/blogService";
 import BlogList from "@/components/blog/BlogList";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // revalidate at most every hour
 
 export default async function BlogPage() {
     const allPosts = await getPosts();

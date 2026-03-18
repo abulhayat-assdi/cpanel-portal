@@ -12,6 +12,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+import { cache } from 'react';
+
 export interface BlogPost {
     id: string;
     title: string;
@@ -31,17 +33,24 @@ export interface BlogPost {
 
 const COLLECTION_NAME = 'posts';
 
-export const getPosts = async (): Promise<BlogPost[]> => {
+/**
+ * Fetch all posts with an optional limit
+ */
+export const getPosts = cache(async (limitCount?: number): Promise<BlogPost[]> => {
     try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+        let q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+
+        if (limitCount) {
+            const { limit: firestoreLimit } = await import('firebase/firestore');
+            q = query(q, firestoreLimit(limitCount));
+        }
+
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
                 ...data,
-                // Convert Timestamps to dates/strings if needed for UI, 
-                // keeping as raw data here for now or handling in UI
                 createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
                 publishedAt: data.publishedAt?.toDate?.().toISOString(),
                 updatedAt: data.updatedAt?.toDate?.().toISOString(),
@@ -51,9 +60,12 @@ export const getPosts = async (): Promise<BlogPost[]> => {
         console.error("Error fetching posts:", error);
         throw error;
     }
-};
+});
 
-export const getPost = async (id: string): Promise<BlogPost | null> => {
+/**
+ * Fetch a single post by ID
+ */
+export const getPost = cache(async (id: string): Promise<BlogPost | null> => {
     try {
         const docRef = doc(db, COLLECTION_NAME, id);
         const docSnap = await getDoc(docRef);
@@ -74,7 +86,39 @@ export const getPost = async (id: string): Promise<BlogPost | null> => {
         console.error("Error fetching post:", error);
         throw error;
     }
-};
+});
+
+/**
+ * Fetch a single post by Slug
+ */
+export const getPostBySlug = cache(async (slug: string): Promise<BlogPost | null> => {
+    try {
+        const { where } = await import('firebase/firestore');
+        const q = query(
+            collection(db, COLLECTION_NAME),
+            where('slug', '==', slug),
+            where('status', '==', 'published'),
+            // limit(1) - query might return more if slugs aren't unique, we take first
+        );
+
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) return null;
+
+        const doc = querySnapshot.docs[0];
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+            publishedAt: data.publishedAt?.toDate?.().toISOString(),
+            updatedAt: data.updatedAt?.toDate?.().toISOString(),
+        } as BlogPost;
+
+    } catch (error) {
+        console.error("Error fetching post by slug:", error);
+        throw error;
+    }
+});
 
 export const createPost = async (post: Omit<BlogPost, 'id' | 'createdAt'>): Promise<BlogPost> => {
     try {

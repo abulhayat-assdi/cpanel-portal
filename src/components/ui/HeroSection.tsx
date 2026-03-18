@@ -101,9 +101,8 @@ export default function HeroSection({
 
 
 
-                {/* CTA Buttons */}
                 <Reveal delay={800}>
-                    <div className="flex flex-wrap justify-center gap-4">
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <button
                             onClick={onPrimaryClick}
                             className="px-8 py-3.5 bg-[#4CAF50] text-white font-bold text-lg rounded-full 
