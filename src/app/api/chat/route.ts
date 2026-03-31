@@ -120,6 +120,7 @@ interface ChatMessage {
     parts: string;
 }
 
+// TODO: In-memory rateLimitMap will not persist across serverless instances and should be replaced with Upstash Redis or Firestore document counting for production deployment.
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 10;

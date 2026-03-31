@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
+import { User, onIdTokenChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthContextType, UserProfile } from "@/types/auth";
 import * as authService from "@/services/authService";
@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.loginWithEmail(email, password);
             // We DO NOT set loading to false here.
-            // The onAuthStateChanged listener will handle it once the profile is fetched.
+            // The onIdTokenChanged listener will handle it once the profile is fetched.
         } catch (error) {
             setLoading(false);
             throw error;
@@ -159,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.logout();
-            // onAuthStateChanged will set profile null and loading false
+            // onIdTokenChanged will set profile null and loading false
         } catch (error) {
             setLoading(false);
             throw error;
