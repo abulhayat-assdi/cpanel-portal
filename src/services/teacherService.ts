@@ -1,6 +1,7 @@
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getImageUrl } from "@/lib/getImageUrl";
+import { COLLECTIONS } from "@/lib/constants";
 
 const TEACHER_ORDER = [
     "Golam Kibria",
@@ -37,7 +38,7 @@ export interface Teacher {
  */
 export const getAllTeachers = async (): Promise<Teacher[]> => {
     try {
-        const teachersRef = collection(db, "teachers");
+        const teachersRef = collection(db, COLLECTIONS.TEACHERS);
         const snapshot = await getDocs(teachersRef);
 
         const teachers = snapshot.docs.map(doc => {
@@ -63,7 +64,7 @@ export const getAllTeachers = async (): Promise<Teacher[]> => {
 
             return a.name.localeCompare(b.name);
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching teachers:", error);
         return [];
     }
@@ -83,7 +84,7 @@ export const addTeacher = async (data: {
     isAdmin?: boolean;
 }): Promise<string> => {
     try {
-        const teachersRef = collection(db, "teachers");
+        const teachersRef = collection(db, COLLECTIONS.TEACHERS);
         const docRef = await addDoc(teachersRef, {
             teacherId: data.teacherId,
             name: data.name,
@@ -96,9 +97,9 @@ export const addTeacher = async (data: {
             createdAt: serverTimestamp()
         });
         return docRef.id;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error adding teacher:", error);
-        throw error;
+        throw new Error("Failed to add teacher to directory.");
     }
 };
 
@@ -110,14 +111,14 @@ export const updateTeacher = async (
     data: Partial<Omit<Teacher, 'id'>>
 ): Promise<void> => {
     try {
-        const teacherRef = doc(db, "teachers", id);
+        const teacherRef = doc(db, COLLECTIONS.TEACHERS, id);
         await updateDoc(teacherRef, {
             ...data,
             updatedAt: serverTimestamp()
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error updating teacher:", error);
-        throw error;
+        throw new Error("Failed to update teacher information.");
     }
 };
 
@@ -126,12 +127,10 @@ export const updateTeacher = async (
  */
 export const deleteTeacher = async (id: string): Promise<void> => {
     try {
-        const teacherRef = doc(db, "teachers", id);
+        const teacherRef = doc(db, COLLECTIONS.TEACHERS, id);
         await deleteDoc(teacherRef);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error deleting teacher:", error);
-        throw error;
+        throw new Error("Failed to delete teacher.");
     }
 };
-
-

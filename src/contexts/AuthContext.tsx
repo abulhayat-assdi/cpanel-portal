@@ -5,6 +5,7 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthContextType, UserProfile } from "@/types/auth";
 import * as authService from "@/services/authService";
+import { COOKIES } from "@/lib/constants";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -26,71 +27,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(firebaseUser);
 
             if (firebaseUser) {
-                // Synchronize Edge Middleware session cookie
                 try {
+                    // 1. Sync Edge Middleware session cookie
                     const token = await firebaseUser.getIdToken();
-                    document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                    document.cookie = `${COOKIES.SESSION}=${token}; path=/; max-age=86400; SameSite=Lax`;
+
+                    // 2. Fetch enriched profile via Server API
+                    const profileRes = await fetch("/api/auth/profile");
+                    if (profileRes.ok) {
+                        const profile = await profileRes.json();
+                        setUserProfile(profile);
+                    } else {
+                        // Fallback to client-side fetch if API fails (unlikely)
+                        const profile = await authService.getUserProfile(firebaseUser.uid);
+                        setUserProfile(profile);
+                    }
                 } catch (err) {
-                    console.error("Failed to get token for session cookie", err);
+                    console.error("[AuthContext] Sync failed:", err);
+                    // Fallback to client-side fetch on error
+                    const profile = await authService.getUserProfile(firebaseUser.uid);
+                    setUserProfile(profile);
                 }
-
-                // ✅ Fetch role exclusively from Firestore — no client-side overrides
-                let profile = await authService.getUserProfile(firebaseUser.uid);
-
-                // If a brand-new Google/Email user has no Firestore document yet,
-                // create a default student profile. Admins/teachers must be
-                // provisioned directly in Firestore (or via a Cloud Function).
-                if (!profile) {
-                    try {
-                        await authService.createUserProfile(
-                            firebaseUser.uid,
-                            firebaseUser.email || "",
-                            firebaseUser.displayName || "Student",
-                            "student"
-                        );
-                        profile = await authService.getUserProfile(firebaseUser.uid);
-                    } catch (err) {
-                        console.error("Failed to create fallback student profile:", err);
-                    }
-                }
-
-                // Auto-assign `teacherId` and `profileImageUrl` from the teachers
-                // directory — this is safe and read-only, no role changes involved.
-                if (profile && profile.role !== "student") {
-                    try {
-                        const { getAllTeachers } = await import("@/services/teacherService");
-                        const allTeachers = await getAllTeachers();
-
-                        const teacherMatch = allTeachers.find((t) =>
-                            (profile!.email && t.email.toLowerCase() === profile!.email.toLowerCase()) ||
-                            t.name === profile!.displayName
-                        );
-
-                        if (teacherMatch) {
-                            if (!profile.teacherId && teacherMatch.teacherId && profile.role === "teacher") {
-                                // WARNING: Real DB role/ID assignments must happen via secure backend Functions, not here.
-                                // We only set the value in local state for UI display purposes.
-                                profile.teacherId = teacherMatch.teacherId;
-                            }
-
-                            // Attach profile image to session
-                            if (teacherMatch.profileImageUrl) {
-                                profile.profileImageUrl = teacherMatch.profileImageUrl;
-                            }
-                        }
-
-                        // Fallback to Google photo if no teacher profile image
-                        if (!profile.profileImageUrl && firebaseUser.photoURL) {
-                            profile.profileImageUrl = firebaseUser.photoURL;
-                        }
-                    } catch (err) {
-                        console.error("Failed to sync teacher metadata:", err);
-                    }
-                }
-
-                setUserProfile(profile);
             } else {
-                document.cookie = "__session=; path=/; max-age=0; SameSite=Lax";
+                // Clear session cookie on logout
+                document.cookie = `${COOKIES.SESSION}=; path=/; max-age=0; SameSite=Lax`;
                 setUserProfile(null);
             }
 
@@ -104,8 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.loginWithEmail(email, password);
-            // We DO NOT set loading to false here.
-            // The onAuthStateChanged listener will handle it once the profile is fetched.
         } catch (error) {
             setLoading(false);
             throw error;
@@ -116,8 +74,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.registerWithEmail(email, password, name, batchName, roll);
-            // We DO NOT set loading to false here.
-            // listener handles it.
         } catch (error) {
             setLoading(false);
             throw error;
@@ -126,8 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const refreshProfile = async () => {
         if (user) {
-            const profile = await authService.getUserProfile(user.uid);
-            setUserProfile(profile);
+            const profileRes = await fetch("/api/auth/profile");
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                setUserProfile(profile);
+            }
         }
     };
 
@@ -145,7 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.logout();
-            // onAuthStateChanged will set profile null and loading false
         } catch (error) {
             setLoading(false);
             throw error;

@@ -1,17 +1,16 @@
 import {
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
     signInWithPopup,
     GoogleAuthProvider,
     signOut,
     sendPasswordResetEmail,
     User,
-    updateProfile,
-    deleteUser,
+    onAuthStateChanged,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserProfile, UserRole } from "@/types/auth";
+import { COOKIES, AUTH_ROLES, COLLECTIONS } from "@/lib/constants";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -23,20 +22,16 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         await updateLastLogin(userCredential.user.uid);
         return userCredential.user;
-    } catch (error: any) {
-        throw new Error(getAuthErrorMessage(error.code));
+    } catch (error: unknown) {
+        if (error instanceof Error && 'code' in error) {
+            throw new Error(getAuthErrorMessage((error as any).code));
+        }
+        throw new Error("An unexpected error occurred during login.");
     }
 };
 
 /**
- * Register with Email and Password — Atomic Registration
- *
- * Strategy:
- *   1. Create Firebase Auth user.
- *   2. Attempt to write the Firestore profile.
- *   3. If Firestore write fails → delete the Auth user immediately so the
- *      account is never left in a "zombie" state (Auth exists, no profile).
- *      The user can then re-register cleanly after fixing the issue.
+ * Register with Email and Password via Secure API
  */
 export const registerWithEmail = async (
     email: string,
@@ -44,38 +39,25 @@ export const registerWithEmail = async (
     name: string,
     batchName: string,
     roll: string
-): Promise<User> => {
-    // Step 1: Create Firebase Auth user
-    let authUser: User;
+): Promise<void> => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        authUser = userCredential.user;
-        await updateProfile(authUser, { displayName: name });
-    } catch (error: any) {
-        console.error("[Registration] Auth user creation failed:", error.code, error.message);
-        throw new Error(getAuthErrorMessage(error.code));
-    }
+        const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, name, batchName, roll }),
+        });
 
-    // Step 2: Write Firestore profile — if this fails, clean up the Auth user
-    try {
-        await createUserProfile(authUser.uid, email, name, "student", undefined, batchName, roll);
-    } catch (firestoreError: any) {
-        console.error("[Registration] Firestore profile creation failed — rolling back Auth user:", firestoreError);
-
-        // Rollback: delete the orphaned Auth user so the student can retry cleanly
-        try {
-            await deleteUser(authUser);
-        } catch (deleteError) {
-            console.error("[Registration] Failed to delete orphaned Auth user during rollback:", deleteError);
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Failed to register account.");
         }
 
-        throw new Error(
-            "Account setup failed. Your registration was not completed. Please try again. " +
-            "If this keeps happening, contact support."
-        );
+        // After successful API registration, log the user in locally
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: unknown) {
+        if (error instanceof Error) throw error;
+        throw new Error("An unexpected error occurred during registration.");
     }
-
-    return authUser;
 };
 
 /**
@@ -90,14 +72,17 @@ export const loginWithGoogle = async (): Promise<User> => {
         const userProfile = await getUserProfile(user.uid);
         if (!userProfile) {
             // Create new user profile with default role "student"
-            await createUserProfile(user.uid, user.email!, user.displayName || "User", "student");
+            await createUserProfile(user.uid, user.email!, user.displayName || "User", AUTH_ROLES.STUDENT);
         } else {
             await updateLastLogin(user.uid);
         }
 
         return user;
-    } catch (error: any) {
-        throw new Error(getAuthErrorMessage(error.code));
+    } catch (error: unknown) {
+        if (error instanceof Error && 'code' in error) {
+            throw new Error(getAuthErrorMessage((error as any).code));
+        }
+        throw new Error("An unexpected error occurred during Google login.");
     }
 };
 
@@ -107,7 +92,7 @@ export const loginWithGoogle = async (): Promise<User> => {
 export const logout = async (): Promise<void> => {
     try {
         await signOut(auth);
-    } catch (error: any) {
+    } catch (error: unknown) {
         throw new Error("Failed to logout. Please try again.");
     }
 };
@@ -118,17 +103,21 @@ export const logout = async (): Promise<void> => {
 export const sendPasswordReset = async (email: string): Promise<void> => {
     try {
         await sendPasswordResetEmail(auth, email);
-    } catch (error: any) {
-        throw new Error(getAuthErrorMessage(error.code));
+    } catch (error: unknown) {
+        if (error instanceof Error && 'code' in error) {
+            throw new Error(getAuthErrorMessage((error as any).code));
+        }
+        throw new Error("Failed to send password reset email.");
     }
 };
 
 /**
- * Get User Profile from Firestore
+ * Get User Profile from Firestore (Client-side version)
+ * Used mainly for checking existence. Profile enrichment is now server-side.
  */
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
     try {
-        const userDoc = await getDoc(doc(db, "users", uid));
+        const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, uid));
         if (userDoc.exists()) {
             const data = userDoc.data();
             return {
@@ -157,13 +146,13 @@ export const createUserProfile = async (
     uid: string,
     email: string,
     displayName: string,
-    role: UserRole = "student",
+    role: UserRole = AUTH_ROLES.STUDENT,
     teacherId?: string,
     studentBatchName?: string,
     studentRoll?: string
 ): Promise<void> => {
     try {
-        await setDoc(doc(db, "users", uid), {
+        await setDoc(doc(db, COLLECTIONS.USERS, uid), {
             uid,
             email,
             displayName,
@@ -185,7 +174,7 @@ export const createUserProfile = async (
  */
 export const updateLastLogin = async (uid: string): Promise<void> => {
     try {
-        await setDoc(doc(db, "users", uid), {
+        await setDoc(doc(db, COLLECTIONS.USERS, uid), {
             lastLogin: serverTimestamp(),
         }, { merge: true });
     } catch (error) {
@@ -198,8 +187,8 @@ export const updateLastLogin = async (uid: string): Promise<void> => {
  */
 export const linkStudentProfile = async (uid: string, batchName: string, roll: string): Promise<void> => {
     try {
-        await setDoc(doc(db, "users", uid), {
-            role: "student",
+        await setDoc(doc(db, COLLECTIONS.USERS, uid), {
+            role: AUTH_ROLES.STUDENT,
             studentBatchName: batchName,
             studentRoll: roll,
         }, { merge: true });

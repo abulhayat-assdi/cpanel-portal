@@ -36,7 +36,7 @@ service cloud.firestore {
 
     // Users (Auth profiles & roles)
     match /users/{userId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin() || isTeacher());
       // Users can create their own profile but cannot give themselves 'admin' role
       allow create: if isAdmin() || (request.auth.uid == userId && request.resource.data.role != 'admin');
       // Users can update their profile but cannot modify the 'role' field
@@ -113,7 +113,9 @@ service cloud.firestore {
     match /student_profile_updates/{docId} {
       allow read: if isAuth();
       // Students can only create updates tagged with their own UID
-      allow create: if isAuth() && request.resource.data.studentUid == request.auth.uid;
+      allow create: if isAuth() && 
+                    request.resource.data.studentUid == request.auth.uid &&
+                    request.resource.data.updateReason.size() < 1000;
       // Only the owning student or an admin can update/delete
       allow update, delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
     }
@@ -138,7 +140,9 @@ service cloud.firestore {
 
     // Student Contact Messages - students create, admins read/manage
     match /contact_messages/{docId} {
-      allow create: if isAuth(); // Any logged-in student can submit
+      allow create: if isAuth() && 
+                    request.resource.data.message.size() < 2000 &&
+                    request.resource.data.subject.size() < 200;
       allow read, update, delete: if isAdmin();
     }
 
@@ -157,8 +161,10 @@ service cloud.firestore {
 
     // Homework Submissions — Students create (owner-only), all auth read, admin/system deletes
     match /homework_submissions/{docId} {
-      allow create: if isAuth() && request.resource.data.studentUid == request.auth.uid;
-      allow read: if isAuth();
+      allow create: if isAuth() && 
+                    request.resource.data.studentUid == request.auth.uid &&
+                    request.resource.data.homeworkUrl.size() < 500;
+      allow read: if isAuth() && (resource.data.studentUid == request.auth.uid || isAdmin() || isTeacher());
       allow update: if false; // Homework cannot be edited once submitted
       // Only owner or admin can delete
       allow delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
@@ -171,7 +177,9 @@ service cloud.firestore {
 
     match /feedback/{feedbackId} {
       // Public can submit feedback
-      allow create: if true;
+      allow create: if request.resource.data.feedback.size() < 2000 &&
+                    request.resource.data.studentName.size() < 100 &&
+                    request.resource.data.status == 'PENDING';
 
       // Admin can read everything
       // Public can read only APPROVED feedback
@@ -189,9 +197,11 @@ service cloud.firestore {
     // Blog Comments (Public read, write, update for likes/replies)
     match /blogComments/{commentId} {
       // Anyone can read and create comments
-      allow read, create: if true;
+      allow read, create: if request.resource.data.content.size() < 1000 &&
+                            request.resource.data.userName.size() < 100;
       // Anyone can update, but ONLY the 'likes' and 'replies' fields
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']) &&
+                    (request.resource.data.likes >= resource.data.likes);
       allow delete: if isAdmin();
     }
 
@@ -238,7 +248,9 @@ service cloud.firestore {
 
     match /contact_inquiries/{docId} {
       // Public can submit contact form
-      allow create: if true;
+      allow create: if request.resource.data.message.size() < 3000 &&
+                    request.resource.data.email.size() < 100 &&
+                    request.resource.data.name.size() < 100;
 
       // Only admin can read & manage
       allow read, update: if isAdmin();
@@ -250,7 +262,7 @@ service cloud.firestore {
     ====================================================== */
 
     match /activity_logs/{logId} {
-      allow create: if isAuth();
+      allow create: if isTeacher() || isAdmin();
       allow read: if isAdmin();
     }
 

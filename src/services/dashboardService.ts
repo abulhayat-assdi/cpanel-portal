@@ -1,5 +1,6 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, Timestamp, orderBy, FieldValue } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, Timestamp, orderBy, FieldValue } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { COLLECTIONS } from "@/lib/constants";
 
 // Types
 export interface Class {
@@ -39,12 +40,12 @@ export interface StudentNotice {
  */
 export const addNotice = async (notice: Omit<Notice, "id">): Promise<string> => {
     try {
-        const noticesRef = collection(db, "notices");
+        const noticesRef = collection(db, COLLECTIONS.NOTICES);
         const docRef = await addDoc(noticesRef, notice);
         return docRef.id;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error adding notice:", error);
-        throw error;
+        throw new Error("Failed to add notice. Please check your connection.");
     }
 };
 
@@ -56,14 +57,14 @@ export const updateNotice = async (
     data: Partial<Omit<Notice, 'id'>>
 ): Promise<void> => {
     try {
-        const noticeRef = doc(db, "notices", id);
+        const noticeRef = doc(db, COLLECTIONS.NOTICES, id);
         await updateDoc(noticeRef, {
             ...data,
             updatedAt: Timestamp.now()
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error updating notice:", error);
-        throw error;
+        throw new Error("Failed to update notice.");
     }
 };
 
@@ -72,11 +73,11 @@ export const updateNotice = async (
  */
 export const deleteNotice = async (id: string): Promise<void> => {
     try {
-        const noticeRef = doc(db, "notices", id);
+        const noticeRef = doc(db, COLLECTIONS.NOTICES, id);
         await deleteDoc(noticeRef);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error deleting notice:", error);
-        throw error;
+        throw new Error("Failed to delete notice.");
     }
 };
 
@@ -85,11 +86,11 @@ export const deleteNotice = async (id: string): Promise<void> => {
  */
 export const addStudentNotice = async (notice: Omit<StudentNotice, "id">): Promise<string> => {
     try {
-        const docRef = await addDoc(collection(db, "student_notices"), notice);
+        const docRef = await addDoc(collection(db, COLLECTIONS.STUDENT_NOTICES), notice);
         return docRef.id;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error adding student notice:", error);
-        throw error;
+        throw new Error("Failed to add student notice.");
     }
 };
 
@@ -98,10 +99,10 @@ export const addStudentNotice = async (notice: Omit<StudentNotice, "id">): Promi
  */
 export const getAllStudentNotices = async (): Promise<StudentNotice[]> => {
     try {
-        const q = query(collection(db, "student_notices"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, COLLECTIONS.STUDENT_NOTICES), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentNotice));
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching student notices:", error);
         return [];
     }
@@ -115,13 +116,13 @@ export const updateStudentNotice = async (
     data: Partial<Omit<StudentNotice, 'id'>>
 ): Promise<void> => {
     try {
-        await updateDoc(doc(db, "student_notices", id), {
+        await updateDoc(doc(db, COLLECTIONS.STUDENT_NOTICES, id), {
             ...data,
             updatedAt: Timestamp.now()
         });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error updating student notice:", error);
-        throw error;
+        throw new Error("Failed to update student notice.");
     }
 };
 
@@ -130,10 +131,10 @@ export const updateStudentNotice = async (
  */
 export const deleteStudentNotice = async (id: string): Promise<void> => {
     try {
-        await deleteDoc(doc(db, "student_notices", id));
-    } catch (error) {
+        await deleteDoc(doc(db, COLLECTIONS.STUDENT_NOTICES, id));
+    } catch (error: unknown) {
         console.error("Error deleting student notice:", error);
-        throw error;
+        throw new Error("Failed to delete student notice.");
     }
 };
 
@@ -142,14 +143,14 @@ export const deleteStudentNotice = async (id: string): Promise<void> => {
  */
 export const getAllClasses = async (): Promise<Class[]> => {
     try {
-        const classesRef = collection(db, "classes");
+        const classesRef = collection(db, COLLECTIONS.CLASSES);
         const snapshot = await getDocs(classesRef);
 
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Class));
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching classes:", error);
         return [];
     }
@@ -160,14 +161,14 @@ export const getAllClasses = async (): Promise<Class[]> => {
  */
 export const getAllNotices = async (): Promise<Notice[]> => {
     try {
-        const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+        const q = query(collection(db, COLLECTIONS.NOTICES), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
 
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Notice));
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching notices:", error);
         return [];
     }

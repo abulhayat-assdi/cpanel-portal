@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
         console.error("Error creating teacher:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to create teacher account" },
+            { error: "Failed to create teacher account. Please check the logs." },
             { status: 500 }
         );
     }

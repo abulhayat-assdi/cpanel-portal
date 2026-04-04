@@ -26,8 +26,9 @@ export async function POST(request: NextRequest) {
     const result = await response.json();
     return NextResponse.json(result);
   } catch (err: any) {
+    console.error("Tracker Proxy Error:", err);
     return NextResponse.json(
-      { success: false, message: err.message || "Proxy API Error" },
+      { success: false, message: "An internal error occurred while processing the request." },
       { status: 500 }
     );
   }
