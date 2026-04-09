@@ -10,8 +10,16 @@ import { COOKIES, AUTH_ROLES } from "@/lib/constants";
  * FormData: { file, category (homework|resource), path (optional) }
  */
 export async function POST(request: NextRequest) {
-    // 🔒 Auth Check
-    const session = request.cookies.get(COOKIES.SESSION)?.value;
+    // 🔒 Auth Check: Accept token from Authorization header (XHR uploads) or cookie (fallback)
+    const authHeader = request.headers.get("Authorization");
+    let session: string | undefined;
+
+    if (authHeader?.startsWith("Bearer ")) {
+        session = authHeader.substring(7); // Extract token from "Bearer <token>"
+    } else {
+        session = request.cookies.get(COOKIES.SESSION)?.value;
+    }
+
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

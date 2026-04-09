@@ -1,12 +1,7 @@
-export const dynamic = "force-static";
-export const revalidate = 86400;
-
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
-import AIFAQSection from "@/components/ui/AIFAQSection";
 
 export default function ContactPage() {
-
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },
@@ -81,11 +76,6 @@ export default function ContactPage() {
             />
 
             <main className="min-h-screen bg-white">
-
-                {/* 1. AI Powered FAQ Section */}
-                {/* TODO: AI Assistant temporarily hidden to save API costs. */}
-                {false && <AIFAQSection />}
-
                 {/* 2. Contact Information Section */}
                 <section className="w-full bg-[#f9fafb] pt-4 pb-8 md:pt-6 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">

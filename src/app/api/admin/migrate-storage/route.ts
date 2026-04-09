@@ -14,9 +14,15 @@ export async function POST(request: NextRequest) {
 
     try {
         const { adminAuth, adminDb } = getAdminServices();
-        const decodedToken = await adminAuth.verifySessionCookie(session);
+        const decodedToken = await adminAuth.verifyIdToken(session);
         
-        if (decodedToken.role !== AUTH_ROLES.ADMIN) {
+        let userRole = decodedToken.role;
+        if (!userRole) {
+            const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+            userRole = userDoc.data()?.role;
+        }
+
+        if (userRole !== AUTH_ROLES.ADMIN) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 

@@ -9,8 +9,7 @@ export default function AboutCTASection() {
             <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 text-center">
                 <Reveal width="100%">
                     <p className="text-xl md:text-2xl text-gray-900 font-semibold mb-8 max-w-3xl mx-auto leading-relaxed">
-                        Take the next step toward building real skills, <br className="hidden md:block" />
-                        professional confidence, and ethical earning.
+                        Take the next step toward building real skills, professional confidence, and ethical earning.
                     </p>
                 </Reveal>
 

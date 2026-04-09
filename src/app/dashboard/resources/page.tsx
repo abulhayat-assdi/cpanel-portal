@@ -106,8 +106,8 @@ export default function ResourcesPage() {
     }, [user]);
 
     // ─── Module Resource Handlers ──────────────────────────────────
-    const openUploadModal = (module: Resource) => {
-        setUploadingForModule(module);
+    const openUploadModal = (courseModule: Resource) => {
+        setUploadingForModule(courseModule);
         setEditingModuleResource(null);
         setUploadForm({ title: "", description: "", resourceType: "Presentation", visibleForBatches: [], isHidden: false });
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -115,8 +115,8 @@ export default function ResourcesPage() {
     };
 
     const openEditModal = (resource: ModuleResource) => {
-        const module = courseModules.find(m => m.id === resource.moduleId) || null;
-        setUploadingForModule(module);
+        const courseModule = courseModules.find(m => m.id === resource.moduleId) || null;
+        setUploadingForModule(courseModule);
         setEditingModuleResource(resource);
         setUploadForm({
             title: resource.title,
@@ -338,26 +338,26 @@ export default function ResourcesPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {myModules.map(module => {
-                            const moduleResources = myModuleResources.filter(r => r.moduleId === module.id);
-                            const isExpanded = expandedModuleId === module.id;
+                        {myModules.map(courseModule => {
+                            const moduleResources = myModuleResources.filter(r => r.moduleId === courseModule.id);
+                            const isExpanded = expandedModuleId === courseModule.id;
                             return (
-                                <div key={module.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                <div key={courseModule.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                     {/* Module Header */}
                                     <div
                                         className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 transition-colors"
-                                        onClick={() => setExpandedModuleId(isExpanded ? null : module.id)}
+                                        onClick={() => setExpandedModuleId(isExpanded ? null : courseModule.id)}
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="p-2.5 bg-[#1e3a5f]/10 text-[#1e3a5f] rounded-xl text-xl">📁</div>
                                             <div>
-                                                <h3 className="font-bold text-gray-900">{module.title}</h3>
-                                                <p className="text-xs text-gray-500 mt-0.5">Teacher: {module.teacherName || module.uploadedByName} &nbsp;·&nbsp; {moduleResources.length} files</p>
+                                                <h3 className="font-bold text-gray-900">{courseModule.title}</h3>
+                                                <p className="text-xs text-gray-500 mt-0.5">Teacher: {courseModule.teacherName || courseModule.uploadedByName} &nbsp;·&nbsp; {moduleResources.length} files</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button
-                                                onClick={e => { e.stopPropagation(); openUploadModal(module); }}
+                                                onClick={e => { e.stopPropagation(); openUploadModal(courseModule); }}
                                                 className="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#162e4a] transition-colors flex items-center gap-1"
                                             >
                                                 <span>+</span> Upload File

@@ -1,12 +1,30 @@
-export const dynamic = "force-static";
-export const revalidate = 86400;
-
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import InstructorCard from "@/components/ui/InstructorCard";
-import { getImageUrl } from "@/lib/getImageUrl";
+import { getAllTeachers } from "@/services/teacherService";
+import Link from "next/link";
+import { getAdminServices } from "@/lib/firebase-admin";
+import { cookies } from "next/headers";
 
-export default function InstructorsPage() {
+async function getAdminStatus() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("__session")?.value;
+    if (!token) return false;
+
+    try {
+        const { adminAuth, adminDb } = getAdminServices();
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+        return userDoc.exists && userDoc.data()?.role === "admin";
+    } catch (e) {
+        return false;
+    }
+}
+
+export default async function InstructorsPage() {
+    const instructors = await getAllTeachers();
+    const isAdmin = await getAdminStatus();
+
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },
@@ -37,69 +55,6 @@ export default function InstructorsPage() {
         },
     ];
 
-    const instructors = [
-        {
-            name: "Golam Kibria",
-            role: "Senior Instructor (Academic)",
-            photo: getImageUrl("instructors/golam-kibria.jpeg"),
-            description: "Golam Kibria holds a B.A. (Hons) and an M.A. in English from a reputed public university. Later, he earned an MBA in Marketing from IBA, DU, achieving a CGPA of 3.64 out of 4. He began his career as a teacher at a Cantt. Public School & College and later transitioned into roles such as Merchandiser and Radio Jockey. Currently, he has been serving as a Senior Assistant Vice President (SAVP) at a Private Commercial Islamic Bank for almost 18 years. Golam Kibria is an experienced trainer and instructor, having conducted sessions at the bank's training center. Most recently, he had the opportunity to train a series of participants under a World Bank Project. His lucid and engaging storytelling, combined with his ability to explain complex concepts in a simple manner, has made him increasingly sought after for training sessions.",
-            email: "kibria@assunnahfoundation.org",
-        },
-        {
-            name: "Mohammad Abu Zabar Rezvhe",
-            role: "Senior Instructor (Academic)",
-            photo: getImageUrl("instructors/abu-zabar-rezvhe.jpg"),
-            description: "Mr. Mohammad Abu Zabar Rezvhe is a seasoned sales professional with over 18 years of experience in sales, marketing, and business development across FMCG, Telecommunications, and Retail sectors. He has successfully led high-performing sales teams, developed impactful training programs, and driven strategic market growth. As a sales trainer, Mr. Rezvhe has designed and delivered structured training programs, equipping individuals with essential sales techniques, negotiation skills, and customer engagement strategies. He has played a pivotal role in new market expansion, including spearheading the Bangladesh market entry strategy for Atlas Axillia. His leadership has resulted in record-breaking sales growth, improved team performance, and optimized business operations for companies like Grameenphone, PRAN-RFL, Godrej, and Hemas Holdings PLC. Mr. Rezvhe is committed to transforming \"The Art of Sales and Marketing\" into a leading employment-focused training program, producing industry-ready sales professionals.",
-            email: "rezvhe@gmail.com",
-        },
-        {
-            name: "Shaibal Shariar",
-            role: "Senior Instructor (Academic)",
-            photo: getImageUrl("instructors/shaibal-shariar.jpg"),
-            description: "CEO & Co-Founder of Prokrity Store, Quantic Dynamics Ltd, Amcare Agro, and Dr. Kit Healthcare. He holds a BBA from IUB, a PGDHRM from the United Kingdom, and ACBA from IBA, DU. With a decade of experience in top management roles, he is a seasoned expert in Business Process Development. His strategic insights and innovative approach have helped organizations optimize efficiency, streamline operations, and achieve sustainable growth. Over the years, he has played a pivotal role in shaping the operational frameworks of more than 40 organizations, including the ICT Ministry Bangladesh Government, 03 international companies, 05 multinational corporations, and 11 local banks. His expertise spans multiple industries, enabling businesses to navigate complex challenges and drive long-term success. Passionate about transformation and innovation, he continues to mentor and guide enterprises toward excellence.",
-            email: "shibalshariar@gmail.com",
-        },
-        {
-            name: "Md. Nesar Uddin",
-            role: "Instructor (Academic)",
-            photo: getImageUrl("instructors/nesar-uddin.jpg"),
-            description: "Bio will be updated soon.",
-            email: "mnumaruf@gmail.com",
-        },
-        {
-            name: "M M Naim Amran",
-            role: "Instructor (Academic)",
-            photo: getImageUrl("instructors/naim-amran.jpg"),
-            description: "Bio will be updated soon.",
-            email: "Nayeem2007@gmail.com",
-        },
-        {
-            name: "Abul Hayat",
-            role: "Course Coordinator & Trainer (Academic)",
-            photo: getImageUrl("instructors/abul-hayat.jpg"),
-            description: "Bio will be updated soon.",
-            email: "abul.hayat@skill.assunnahfoundation.org",
-        },
-    ];
-
-
-
-
-    const approachPoints = [
-        {
-            title: "Field Guidance",
-            description: "Guiding students during fieldwork and real customer interactions.",
-        },
-        {
-            title: "Continuous Feedback",
-            description: "Providing continuous feedback and practical correction.",
-        },
-        {
-            title: "Ethical Accountability",
-            description: "Emphasizing ethical behavior, discipline, and professional accountability.",
-        },
-    ];
-
     return (
         <>
             <Header
@@ -110,13 +65,27 @@ export default function InstructorsPage() {
 
             <main className="min-h-screen bg-[#fafaf9] flex flex-col">
                 {/* Clean Page Header */}
-                <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center relative">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
                         Meet Our Team
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
                         Dedicated professionals committed to helping you grow with practical skills and ethical values.
                     </p>
+                    
+                    {isAdmin && (
+                        <div className="mt-6">
+                            <Link 
+                                href="/dashboard/teachers"
+                                className="inline-flex items-center gap-2 px-6 py-2 bg-[#059669] text-white font-bold rounded-full hover:bg-[#10b981] transition-all shadow-md"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit Instructors Content
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* 3. Instructors Grid Section */}
@@ -125,22 +94,23 @@ export default function InstructorsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {instructors.map((instructor, index) => (
                                 <InstructorCard
-                                    key={index}
+                                    key={instructor.id}
                                     index={index}
                                     name={instructor.name}
-                                    role={instructor.role}
-                                    description={instructor.description}
+                                    role={instructor.designation}
+                                    description={instructor.about}
                                     email={instructor.email}
-                                    image={instructor.photo}
+                                    image={instructor.profileImageUrl}
                                 />
                             ))}
                         </div>
-
+                        {instructors.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+                                <p className="text-gray-500 text-lg">No instructors found.</p>
+                            </div>
+                        )}
                     </div>
                 </section>
-
-
-
             </main>
 
             <Footer

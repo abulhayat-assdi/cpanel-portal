@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
             // Role is stored in Firestore (users collection), not as a Firebase Auth custom claim
             const userDoc = await adminDb.collection("users").doc(userUid).get();
-            const userRole = (userDoc.data()?.role as string) || "";
+            const userRole = ((userDoc.data()?.role as string) || "").toLowerCase();
 
             // Rules: Admin & Teacher see everything. Student sees only their UID folder.
             if (userRole === AUTH_ROLES.ADMIN || userRole === AUTH_ROLES.TEACHER) {
@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
                 console.warn(`[File API] Unknown role '${userRole}' for user ${userUid}`);
                 return NextResponse.json({ error: "Forbidden: Unknown role" }, { status: 403 });
             }
+
         } catch (error) {
             console.error("[File API] Auth Error:", error);
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

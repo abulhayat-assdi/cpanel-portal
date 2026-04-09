@@ -57,7 +57,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        // Periodic token refresh (every 10 minutes) to keep the cookie fresh
+        const refreshInterval = setInterval(async () => {
+            if (auth.currentUser) {
+                try {
+                    const token = await auth.currentUser.getIdToken(true);
+                    document.cookie = `${COOKIES.SESSION}=${token}; path=/; max-age=86400; SameSite=Lax`;
+                    console.log("[AuthContext] Token refreshed automatically");
+                } catch (err) {
+                    console.error("[AuthContext] Token refresh failed:", err);
+                }
+            }
+        }, 10 * 60 * 1000);
+
+        return () => {
+            unsubscribe();
+            clearInterval(refreshInterval);
+        };
     }, []);
 
     const loginWithEmail = async (email: string, password: string) => {

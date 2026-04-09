@@ -42,7 +42,6 @@ const whyReasons = [
     },
 ];
 
-
 export default function WhyThisCourseSection() {
     return (
         <section className="relative w-full py-20 md:py-28 bg-white overflow-hidden border-t border-gray-100">

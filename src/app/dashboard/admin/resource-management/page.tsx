@@ -64,8 +64,8 @@ export default function AdminResourceManagementPage() {
 
     useEffect(() => { fetchAll(); }, []);
 
-    const openUploadModal = (module: Resource) => {
-        setUploadingForModule(module);
+    const openUploadModal = (courseModule: Resource) => {
+        setUploadingForModule(courseModule);
         setEditingResource(null);
         setUploadForm({ title: "", description: "", resourceType: "Presentation", visibleForBatches: [], isHidden: false });
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -73,8 +73,8 @@ export default function AdminResourceManagementPage() {
     };
 
     const openEditModal = (res: ModuleResource) => {
-        const module = courseModules.find(m => m.id === res.moduleId) || null;
-        setUploadingForModule(module);
+        const courseModule = courseModules.find(m => m.id === res.moduleId) || null;
+        setUploadingForModule(courseModule);
         setEditingResource(res);
         setUploadForm({ title: res.title, description: res.description || "", resourceType: res.resourceType, visibleForBatches: res.visibleForBatches, isHidden: res.isHidden });
         setUploadModalOpen(true);
@@ -211,24 +211,24 @@ export default function AdminResourceManagementPage() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filteredModules.map(module => {
-                        const moduleResources = allResources.filter(r => r.moduleId === module.id);
-                        const isExpanded = expandedModuleId === module.id;
+                    {filteredModules.map(courseModule => {
+                        const moduleResources = allResources.filter(r => r.moduleId === courseModule.id);
+                        const isExpanded = expandedModuleId === courseModule.id;
                         const hiddenCount = moduleResources.filter(r => r.isHidden).length;
 
                         return (
-                            <div key={module.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div key={courseModule.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 {/* Module Header */}
                                 <div
                                     className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 transition-colors"
-                                    onClick={() => setExpandedModuleId(isExpanded ? null : module.id)}
+                                    onClick={() => setExpandedModuleId(isExpanded ? null : courseModule.id)}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="p-2.5 bg-[#1e3a5f]/10 text-[#1e3a5f] rounded-xl text-xl">📁</div>
                                         <div>
-                                            <h3 className="font-bold text-gray-900">{module.title}</h3>
+                                            <h3 className="font-bold text-gray-900">{courseModule.title}</h3>
                                             <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                                                <span>👤 {module.teacherName || module.uploadedByName}</span>
+                                                <span>👤 {courseModule.teacherName || courseModule.uploadedByName}</span>
                                                 <span>·</span>
                                                 <span className="text-blue-600 font-semibold">{moduleResources.length} files</span>
                                                 {hiddenCount > 0 && <span className="text-amber-500">· {hiddenCount} hidden</span>}
@@ -237,7 +237,7 @@ export default function AdminResourceManagementPage() {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <button
-                                            onClick={e => { e.stopPropagation(); openUploadModal(module); }}
+                                            onClick={e => { e.stopPropagation(); openUploadModal(courseModule); }}
                                             className="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#162e4a] transition-colors flex items-center gap-1"
                                         >
                                             <span>+</span> Upload

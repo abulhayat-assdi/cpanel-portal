@@ -1,12 +1,10 @@
-export const dynamic = "force-static";
-
 import HeroSection from "@/components/ui/HeroSection";
 import LearningOutcomes from "@/components/ui/LearningOutcomes";
 import TargetAudience from "@/components/ui/TargetAudience";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 
-// Moved outside component to avoid recreation and support Server Component
+// Static data for the page
 const navLinks = [
     { label: "Home", href: "/", isActive: true },
     { label: "About", href: "/about" },
@@ -86,10 +84,6 @@ export default function HomePage() {
             />
             <main className="min-h-screen bg-white">
                 <HeroSection
-                    heading="The Art of Sales & Marketing"
-                    subheading=""
-                    primaryButtonText="Learn About the Course"
-                    secondaryButtonText="View Modules"
                     primaryButtonHref="/about"
                     secondaryButtonHref="/modules"
                 />

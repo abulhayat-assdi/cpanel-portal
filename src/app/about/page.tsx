@@ -1,6 +1,3 @@
-export const dynamic = "force-static";
-export const revalidate = 86400;
-
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import AboutCourseSection from "@/components/ui/AboutCourseSection";
@@ -53,8 +50,7 @@ export default function AboutPage() {
                         About The Course
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-3xl mx-auto font-medium">
-                        বর্তমান মার্কেটপ্লেসে সত্যিকারের সাফল্য অর্জন করতে যে সলিড স্কিলগুলো প্রয়োজন, এই কোর্স আপনাকে সেটাই প্রোভাইড করবে।<br />
-                        Built on pure ethics and 100% practical knowledge.
+                        বর্তমান মার্কেটপ্লেসে সত্যিকারের সাফল্য অর্জন করতে যে সলিড স্কিলগুলো প্রয়োজন, এই কোর্স আপনাকে সেটাই প্রোভাইড করবে। Built on pure ethics and 100% practical knowledge.
                     </p>
                 </div>
 

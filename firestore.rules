@@ -11,15 +11,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuth() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuth() && 
+        request.auth.token.role == 'admin';
     }
 
     function isTeacher() {
-      return isAuth() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+      return isAuth() && 
+        request.auth.token.role == 'teacher';
     }
 
     /* =====================================================
@@ -107,6 +105,12 @@ service cloud.firestore {
     match /meeting_minutes/{docId} {
       allow read: if isAuth();
       allow write: if isAdmin();
+    }
+
+    // Daily Tracker Reports
+    match /daily_tracker_reports/{docId} {
+      allow create: if true; // Public can submit reports
+      allow read, delete: if isAdmin(); // Only admins can view and delete
     }
 
     // Student Profile Updates
@@ -264,6 +268,13 @@ service cloud.firestore {
     match /activity_logs/{logId} {
       allow create: if isTeacher() || isAdmin();
       allow read: if isAdmin();
+    }
+
+    // Public Pages (CMS Content)
+    match /public_pages/{pageId} {
+      allow read: if true;
+      allow write: if isAuth() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     /* =====================================================

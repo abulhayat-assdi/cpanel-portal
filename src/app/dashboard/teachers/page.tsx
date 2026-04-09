@@ -38,7 +38,10 @@ export default function TeachersPage() {
         password: "",
         profileImageUrl: "",
         isAdmin: false,
+        order: 0,
     });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const fetchTeachers = async () => {
         setLoading(true);
@@ -68,9 +71,25 @@ export default function TeachersPage() {
             password: "",
             profileImageUrl: "",
             isAdmin: false,
+            order: 0,
         });
+        setSelectedFile(null);
+        setImagePreview(null);
         setEditingTeacher(null);
         setIsEditMode(false);
+    };
+
+    // Handle file selection
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     // Open Add Modal
@@ -92,7 +111,9 @@ export default function TeachersPage() {
             password: "", // intentionally blank for edit
             profileImageUrl: teacher.profileImageUrl || "",
             isAdmin: Boolean(teacher.isAdmin), // Ensure boolean type
+            order: teacher.order || 0,
         });
+        setImagePreview(teacher.profileImageUrl || null);
         setIsEditMode(true);
 
         setIsModalOpen(true);
@@ -114,6 +135,26 @@ export default function TeachersPage() {
 
         setIsSubmitting(true);
         try {
+            let finalImageUrl = formData.profileImageUrl;
+
+            // 1. Upload image if selected
+            if (selectedFile) {
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", selectedFile);
+                
+                const uploadRes = await fetch("/api/upload", {
+                    method: "POST",
+                    body: uploadFormData,
+                });
+
+                if (!uploadRes.ok) {
+                    throw new Error("Failed to upload image.");
+                }
+
+                const uploadData = await uploadRes.json();
+                finalImageUrl = uploadData.url;
+            }
+
             if (isEditMode && editingTeacher) {
                 // Update existing teacher
                 await updateTeacher(editingTeacher.id, {
@@ -123,26 +164,39 @@ export default function TeachersPage() {
                     about: formData.about,
                     phone: formData.phone,
                     email: formData.email,
-                    profileImageUrl: formData.profileImageUrl || undefined,
+                    profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
+                    order: Number(formData.order),
                 });
             } else {
+                // IMPORTANT: Refresh the ID token before calling the API
+                let freshToken = "";
+                if (user) {
+                    freshToken = await user.getIdToken(true);
+                    // Sync cookie as well for other routes
+                    document.cookie = `__session=${freshToken}; path=/; max-age=86400; SameSite=Lax`;
+                }
+
                 // Add new teacher in Firebase Auth FIRST via secure backend
                 const response = await fetch("/api/admin/create-teacher", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${freshToken}`
+                    },
                     body: JSON.stringify({
                         email: formData.email,
                         password: formData.password,
                         name: formData.name,
                         phone: formData.phone,
                         role: formData.isAdmin ? "admin" : "teacher",
+                        order: Number(formData.order),
                     }),
                 });
 
                 const result = await response.json();
                 if (!response.ok) {
-                    throw new Error(result.error || "Failed to create teacher account.");
+                    throw new Error(result.error || result.message || "Failed to create teacher account.");
                 }
 
                 // Add to standard Teachers directory collection now that auth succeeded
@@ -153,17 +207,18 @@ export default function TeachersPage() {
                     about: formData.about,
                     phone: formData.phone,
                     email: formData.email,
-                    profileImageUrl: formData.profileImageUrl || undefined,
+                    profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
+                    order: Number(formData.order),
                 });
             }
 
             await fetchTeachers();
             setIsModalOpen(false);
             resetForm();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save teacher", error);
-            alert(`Failed to ${isEditMode ? 'update' : 'add'} teacher. Please try again.`);
+            alert(error.message || "An unexpected error occurred. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -405,30 +460,61 @@ export default function TeachersPage() {
                                 </div>
                             )}
 
-                            <div>
-                                <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                                    Profile Image URL (Optional)
-                                </label>
-                                <input
-                                    type="url"
-                                    value={formData.profileImageUrl}
-                                    onChange={(e) => setFormData({ ...formData, profileImageUrl: e.target.value })}
-                                    placeholder="https://..."
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                                        Serial Number (Order) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        required
+                                        value={formData.order}
+                                        onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+                                        placeholder="e.g., 1"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
+                                    />
+                                </div>
+                                
+                                <div className="flex items-end pb-1">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="isAdmin"
+                                            checked={formData.isAdmin}
+                                            onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
+                                            className="w-4 h-4 text-[#059669] border-gray-300 rounded focus:ring-[#059669]"
+                                        />
+                                        <label htmlFor="isAdmin" className="text-sm font-medium text-[#1f2937]">
+                                            Grant Admin Access
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="isAdmin"
-                                    checked={formData.isAdmin}
-                                    onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
-                                    className="w-4 h-4 text-[#059669] border-gray-300 rounded focus:ring-[#059669]"
-                                />
-                                <label htmlFor="isAdmin" className="text-sm font-medium text-[#1f2937]">
-                                    Grant Admin Access
+                            <div>
+                                <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                                    Profile Image
                                 </label>
+                                <div className="flex items-center gap-4">
+                                    {imagePreview && (
+                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#059669] flex-shrink-0">
+                                            <img 
+                                                src={imagePreview} 
+                                                alt="Preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#059669] file:text-white hover:file:bg-[#10b981]"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Leave blank to keep existing image (if editing) or use default.
+                                </p>
                             </div>
 
                             <div className="flex gap-3 pt-4">

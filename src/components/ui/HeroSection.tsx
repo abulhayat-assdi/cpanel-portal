@@ -9,10 +9,10 @@ import { getImageUrl } from "@/lib/getImageUrl";
 
 interface HeroSectionProps {
     badge?: string;
-    heading: string;
-    subheading: string;
-    primaryButtonText: string;
-    secondaryButtonText: string;
+    heading?: string;
+    subheading?: string;
+    primaryButtonText?: string;
+    secondaryButtonText?: string;
     primaryButtonHref?: string;
     secondaryButtonHref?: string;
     onPrimaryClick?: () => void;
@@ -22,10 +22,10 @@ interface HeroSectionProps {
 
 export default function HeroSection({
     badge,
-    heading,
-    subheading,
-    primaryButtonText,
-    secondaryButtonText,
+    heading = "The Art of Sales & Marketing",
+    subheading = "Sell with Skill. Market with Ethics. Win in Real Life.",
+    primaryButtonText = "Learn About the Course",
+    secondaryButtonText = "View Modules",
     primaryButtonHref,
     secondaryButtonHref,
     onPrimaryClick,
@@ -100,11 +100,9 @@ export default function HeroSection({
                 {/* Tagline */}
                 <Reveal delay={600}>
                     <p className="text-xl md:text-2xl font-semibold text-white tracking-wide mb-10">
-                        Sell with Skill. Market with Ethics. Win in Real Life.
+                        {subheading}
                     </p>
                 </Reveal>
-
-
 
                 <Reveal delay={800}>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">

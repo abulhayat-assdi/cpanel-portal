@@ -4,10 +4,10 @@ import { getPublishedPosts } from "@/services/blogService";
 import BlogList from "@/components/blog/BlogList";
 
 export const dynamic = "force-static";
-export const revalidate = 3600; // revalidate at most every hour
 
 export default async function BlogPage() {
     const publishedPosts = await getPublishedPosts();
+
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },
@@ -43,7 +43,6 @@ export default async function BlogPage() {
             <Header
                 brandText="Sales & Marketing"
                 navLinks={navLinks}
-                ctaText="Enroll"
             />
 
             <main className="min-h-screen bg-white">

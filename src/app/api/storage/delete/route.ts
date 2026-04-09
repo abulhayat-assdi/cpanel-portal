@@ -23,9 +23,17 @@ export async function DELETE(request: NextRequest) {
     }
 
     try {
-        const { adminAuth } = getAdminServices();
-        const decodedToken = await adminAuth.verifySessionCookie(session);
-        const userRole = decodedToken.role as string;
+        const { adminAuth, adminDb } = getAdminServices();
+        const decodedToken = await adminAuth.verifyIdToken(session);
+        
+        // Use custom claim 'role' if it exists, otherwise fallback to Firestore
+        let userRole = decodedToken.role as string;
+        
+        if (!userRole) {
+            const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+            userRole = userDoc.data()?.role;
+        }
+
         const userUid = decodedToken.uid;
 
         const localStoragePath = process.env.LOCAL_STORAGE_PATH || "../storage";

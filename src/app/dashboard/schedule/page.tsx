@@ -26,8 +26,9 @@ export default function SchedulePage() {
     const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
     const [newRoutineName, setNewRoutineName] = useState("");
     const [newRoutineDate, setNewRoutineDate] = useState("");
-    const [newRoutineLink, setNewRoutineLink] = useState("");
+    const [newRoutineFile, setNewRoutineFile] = useState<File | null>(null);
     const [isAddingRoutine, setIsAddingRoutine] = useState(false);
+    const [routineUploadProgress, setRoutineUploadProgress] = useState("");
 
     // Add Schedule Modal State
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -312,18 +313,41 @@ export default function SchedulePage() {
 
     const handleAddRoutine = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newRoutineName.trim() || !newRoutineDate.trim() || !newRoutineLink.trim()) return;
+        if (!newRoutineName.trim() || !newRoutineDate.trim() || !newRoutineFile) {
+            alert("Please fill all fields and select a file.");
+            return;
+        }
         if (!userProfile?.uid) {
             alert("No user ID found.");
             return;
         }
 
         setIsAddingRoutine(true);
+        setRoutineUploadProgress("Uploading file...");
         try {
+            // 1. Upload the file
+            const formData = new FormData();
+            formData.append("file", newRoutineFile);
+            formData.append("folder", "routines");
+
+            const uploadRes = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error("File upload failed");
+            }
+
+            const { url } = await uploadRes.json();
+            
+            setRoutineUploadProgress("Saving routine data...");
+
+            // 2. Add routine to Firestore with the generated URL
             await addClassRoutine({
                 title: newRoutineName,
                 date: newRoutineDate,
-                fileUrl: newRoutineLink,
+                fileUrl: url,
                 uploadedByUid: userProfile.uid,
                 uploadedByName: userProfile.displayName || "Admin",
             });
@@ -340,6 +364,7 @@ export default function SchedulePage() {
             alert("Failed to add routine. Please try again.");
         } finally {
             setIsAddingRoutine(false);
+            setRoutineUploadProgress("");
         }
     };
 
@@ -347,7 +372,7 @@ export default function SchedulePage() {
         setIsRoutineModalOpen(false);
         setNewRoutineName("");
         setNewRoutineDate("");
-        setNewRoutineLink("");
+        setNewRoutineFile(null);
     };
 
     // --- Batch Management Handlers ---
@@ -1129,15 +1154,15 @@ export default function SchedulePage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Ad Link (Drive Link)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Routine File (PDF, Image, etc.)</label>
                                 <input
-                                    type="url"
-                                    value={newRoutineLink}
-                                    onChange={(e) => setNewRoutineLink(e.target.value)}
-                                    placeholder="https://drive.google.com/..."
+                                    type="file"
+                                    onChange={(e) => setNewRoutineFile(e.target.files?.[0] || null)}
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-[#059669] hover:file:bg-green-100"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Max file size: 5MB. Supports PDF, Word & Images.</p>
                             </div>
 
                             <div className="pt-4 flex gap-3">
@@ -1154,7 +1179,7 @@ export default function SchedulePage() {
                                     disabled={isAddingRoutine}
                                     className="w-full bg-[#059669] hover:bg-[#047857] text-white"
                                 >
-                                    {isAddingRoutine ? "Saving..." : "Add Routine"}
+                                    {isAddingRoutine ? (routineUploadProgress || "Processing...") : "Add Routine"}
                                 </Button>
                             </div>
                         </form>

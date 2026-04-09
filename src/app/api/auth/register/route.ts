@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
         });
 
         try {
-            // 2. Create Firestore Profile
+            // 2. Set custom claims
+            await adminAuth.setCustomUserClaims(userRecord.uid, { 
+                role: AUTH_ROLES.STUDENT,
+                student: true 
+            });
+
+            // 3. Create Firestore Profile
             await adminDb.collection(COLLECTIONS.USERS).doc(userRecord.uid).set({
                 uid: userRecord.uid,
                 email: userRecord.email,

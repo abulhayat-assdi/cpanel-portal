@@ -60,11 +60,11 @@ export default function StudentResourcePage() {
         fetch();
     }, []);
 
-    const handleFolderClick = async (module: Resource) => {
-        setActiveModule(module);
+    const handleFolderClick = async (courseModule: Resource) => {
+        setActiveModule(courseModule);
         setResourcesLoading(true);
         try {
-            const all = await getModuleResourcesByTitle(module.title);
+            const all = await getModuleResourcesByTitle(courseModule.title);
             // Filter: not hidden AND (batch matches OR visible for all)
             const filtered = all.filter(r => {
                 if (r.isHidden) return false;

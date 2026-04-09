@@ -1,8 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getRawBatchesPublic, BatchMetadata } from "@/services/batchInfoService";
 import "../dashboard/tracker/tracker.css";
 
+/**
+ * Checklist items for the Daily Discipline Tracker
+ */
 const CHECKLIST_ITEMS = [
     "ক্লাস শুরুর ১০মিনিট আগে সবাই উপস্থিত ছিল?",
     "স্টুডেন্টদের ড্রেস কোড ঠিক ছিল?",
@@ -20,7 +24,7 @@ const CHECKLIST_ITEMS = [
     "আসরের পরে নসিহা এবং মাগরিবের পরে আজকারে সবাই উপস্থিত ছিল? যদি কেও না থাকে তার নাম লিখুন।"
 ];
 
-// Items where "হ্যাঁ" answer requires a reason (negative/problem items)
+// Items where "হ্যাঁ" (Yes) is the "problem" state requiring a reason
 const INVERTED_ITEMS = new Set([3, 6, 8, 9]);
 
 function triggerValue(idx: number) {
@@ -35,9 +39,66 @@ function getTodayDateString() {
     return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Complete Rewrite: Daily Discipline Tracker Form
+ * Strict Client Component - No Async main function - Robust Filtering
+ */
 export default function DailyTrackerFormPage() {
+    // ─── 1. State Setup ───
     const [toasts, setToasts] = useState<{ id: number; message: string; type: string }[]>([]);
+    const [captainName, setCaptainName] = useState("");
+    const [batchNumber, setBatchNumber] = useState("");
+    const [reportDate, setReportDate] = useState(getTodayDateString());
+    
+    // Batch data states
+    const [runningBatches, setRunningBatches] = useState<BatchMetadata[]>([]);
+    const [isLoadingBatches, setIsLoadingBatches] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
 
+    // Checklist answer states
+    type AnswerState = { status: "হ্যাঁ" | "না" | null; reason: string };
+    const [answers, setAnswers] = useState<AnswerState[]>(
+        CHECKLIST_ITEMS.map(() => ({ status: null, reason: "" }))
+    );
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // ─── 2. Data Fetching & Filtering ───
+    useEffect(() => {
+        const fetchBatches = async () => {
+            setIsLoadingBatches(true);
+            setFetchError(false);
+            try {
+                // Fetch raw batches from service (queries both meta and student collections)
+                const fetchedBatches: any[] = await getRawBatchesPublic();
+                
+                // CRITICAL - Robust Broad Filter to catch all active variations
+                const activeBatches = fetchedBatches.filter((b: any) => {
+                    const status = b.status?.trim().toLowerCase();
+                    // Catch: "running", "active", or explicitly not completed
+                    return status === 'running' || status === 'active' || b.isCompleted === false;
+                });
+
+                // Sort alphabetically by name
+                activeBatches.sort((a, b) => a.name.localeCompare(b.name));
+
+                setRunningBatches(activeBatches);
+                
+                if (activeBatches.length === 0) {
+                    console.warn("Daily Tracker: No active batches found after broad filtering.", fetchedBatches);
+                }
+            } catch (error) {
+                console.error("Daily Tracker: Fetch error:", error);
+                setFetchError(true);
+                showToast("❗ ব্যাচ তালিকা লোড করতে ব্যর্থ হয়েছে।", "error");
+            } finally {
+                setIsLoadingBatches(false);
+            }
+        };
+
+        fetchBatches();
+    }, []);
+
+    // ─── 3. Handlers ───
     const showToast = (message: string, type = "success") => {
         const id = Date.now() + Math.random();
         setToasts((prev) => [...prev, { id, message, type }]);
@@ -45,20 +106,6 @@ export default function DailyTrackerFormPage() {
             setToasts((prev) => prev.filter((t) => t.id !== id));
         }, 3300);
     };
-
-    const [captainName, setCaptainName] = useState("");
-    const [batchNumber, setBatchNumber] = useState("");
-    const [reportDate, setReportDate] = useState("");
-
-    type AnswerState = { status: "হ্যাঁ" | "না" | null; reason: string };
-    const [answers, setAnswers] = useState<AnswerState[]>(
-        CHECKLIST_ITEMS.map(() => ({ status: null, reason: "" }))
-    );
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        setReportDate(getTodayDateString());
-    }, []);
 
     const resetForm = () => {
         setCaptainName("");
@@ -94,16 +141,23 @@ export default function DailyTrackerFormPage() {
         }
 
         let firstUnanswered = -1;
+        let score = 0;
         for (let i = 0; i < CHECKLIST_ITEMS.length; i++) {
             if (!answers[i].status) {
                 if (firstUnanswered === -1) firstUnanswered = i;
+            } else {
+                if (answers[i].status !== triggerValue(i)) {
+                    score += 1;
+                }
             }
+
             if (answers[i].status === triggerValue(i) && !answers[i].reason.trim()) {
                 showToast(`❗ প্রশ্ন ${i + 1}-এর জন্য কারণ লিখুন।`, "error");
                 document.getElementById(`reason-${i}`)?.focus();
                 return;
             }
         }
+
         if (firstUnanswered !== -1) {
             showToast(`❗ প্রশ্ন ${firstUnanswered + 1}-এর উত্তর দিন।`, "error");
             document.getElementById(`item-${firstUnanswered}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -112,9 +166,14 @@ export default function DailyTrackerFormPage() {
 
         const payload = {
             date: reportDate,
-            captainName: captainName.trim(),
-            batch: batchNumber,
-            items: answers.map((a) => ({ status: a.status, reason: a.reason.trim() })),
+            studentName: captainName.trim(), 
+            batchName: batchNumber,          
+            tasks: answers.map((a, i) => ({ 
+                question: CHECKLIST_ITEMS[i],
+                status: a.status, 
+                reason: a.reason.trim() 
+            })),
+            score: Math.round((score / CHECKLIST_ITEMS.length) * 100), 
         };
 
         setIsSubmitting(true);
@@ -122,14 +181,14 @@ export default function DailyTrackerFormPage() {
             const res = await fetch("/api/tracker", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "saveFormData", payload }),
+                body: JSON.stringify(payload),
             });
             const result = await res.json();
-            if (result.success) {
-                showToast(result.message, "success");
+            if (res.ok && result.success) {
+                showToast("✅ রিপোর্ট সফলভাবে জমা হয়েছে।", "success");
                 resetForm();
             } else {
-                showToast(`❌ Error: ${result.message}`, "error");
+                showToast(`❌ Error: ${result.error || result.message || "Submission failed"}`, "error");
             }
         } catch (err: any) {
             showToast(`❌ সমস্যা: ${err.message}`, "error");
@@ -138,16 +197,17 @@ export default function DailyTrackerFormPage() {
         }
     };
 
+    // ─── 4. Render ───
     return (
         <div className="tracker-page-root">
-            {/* ── App Header ── */}
-            <header className="app-header" role="banner">
+            {/* App Header */}
+            <header className="app-header">
                 <div className="app-title">📋 ব্যাচ ডিসিপ্লিন ট্র্যাকার</div>
                 <div className="app-subtitle">Daily Discipline Tracker</div>
             </header>
 
-            {/* ── Main Content ── */}
-            <main className="tracker-view-wrap" role="main">
+            {/* Main Content */}
+            <main className="tracker-view-wrap">
 
                 {/* Captain Info Card */}
                 <div className="form-card" style={{ marginTop: "20px" }}>
@@ -173,11 +233,24 @@ export default function DailyTrackerFormPage() {
                             value={batchNumber}
                             onChange={(e) => setBatchNumber(e.target.value)}
                             required
+                            disabled={isLoadingBatches}
                         >
-                            <option value="" disabled>ব্যাচ সিলেক্ট করুন</option>
-                            <option value="Batch 08">Batch 08</option>
-                            <option value="Batch 09">Batch 09</option>
+                            {isLoadingBatches ? (
+                                <option value="" disabled>লোড হচ্ছে (Loading batches)...</option>
+                            ) : runningBatches.length === 0 ? (
+                                <option value="" disabled>কোনো রানিং ব্যাচ পাওয়া যায়নি</option>
+                            ) : (
+                                <>
+                                    <option value="" disabled>ব্যাচ সিলেক্ট করুন</option>
+                                    {runningBatches.map(batch => (
+                                        <option key={batch.name} value={batch.name}>{batch.name}</option>
+                                    ))}
+                                </>
+                            )}
                         </select>
+                        {!isLoadingBatches && runningBatches.length === 0 && !fetchError && (
+                            <p className="hint-text">Note: Admin has not marked any batches as "Running" yet.</p>
+                        )}
                     </div>
 
                     <div className="field-group">
@@ -197,10 +270,8 @@ export default function DailyTrackerFormPage() {
                     <h2>✅ দৈনিক চেকলিস্ট</h2>
 
                     <p style={{ fontSize: "0.88rem", color: "#64748b", marginBottom: "14px", lineHeight: "1.5" }}>
-                        For each item, select{" "}
-                        <strong style={{ color: "#16a34a" }}>হ্যাঁ (Yes)</strong> or{" "}
-                        <strong style={{ color: "#dc2626" }}>না (No)</strong>. If you select &ldquo;না&rdquo;, a reason box
-                        will appear below — filling it in is <strong>mandatory</strong> before submitting.
+                        For each item, select <strong style={{ color: "#16a34a" }}>হ্যাঁ (Yes)</strong> or <strong style={{ color: "#dc2626" }}>না (No)</strong>. 
+                        If a specific state requires explanation, a reason box will appear.
                     </p>
 
                     <div id="checklist-container">
@@ -215,7 +286,7 @@ export default function DailyTrackerFormPage() {
                             if (isNo) itemClass += " answered-no";
 
                             return (
-                                <div key={idx} id={`item-${idx}`} className={itemClass} role="listitem">
+                                <div key={idx} id={`item-${idx}`} className={itemClass}>
                                     <div className="item-top">
                                         <span className="item-number">{idx + 1}</span>
                                         <span className="item-label">{label}</span>
@@ -224,7 +295,6 @@ export default function DailyTrackerFormPage() {
                                                 className={`toggle-btn yes-btn${isYes ? " active" : ""}`}
                                                 type="button"
                                                 onClick={() => handleToggle(idx, "হ্যাঁ")}
-                                                aria-pressed={isYes}
                                             >
                                                 ✓ হ্যাঁ
                                             </button>
@@ -232,7 +302,6 @@ export default function DailyTrackerFormPage() {
                                                 className={`toggle-btn no-btn${isNo ? " active" : ""}`}
                                                 type="button"
                                                 onClick={() => handleToggle(idx, "না")}
-                                                aria-pressed={isNo}
                                             >
                                                 ✗ না
                                             </button>
@@ -247,7 +316,7 @@ export default function DailyTrackerFormPage() {
                                             className="reason-input"
                                             id={`reason-${idx}`}
                                             rows={3}
-                                            placeholder="কারণ, দোষী ব্যক্তির নাম বা কী হয়েছে তা বিস্তারিত লিখুন।"
+                                            placeholder="বিস্তারিত লিখুন..."
                                             value={answer.reason}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -271,12 +340,11 @@ export default function DailyTrackerFormPage() {
                     className="submit-btn"
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    aria-label="Submit daily discipline report"
+                    disabled={isSubmitting || isLoadingBatches}
                 >
                     {isSubmitting ? (
                         <>
-                            <span className="spinner" style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}></span>
+                            <span className="spinner"></span>
                             জমা হচ্ছে...
                         </>
                     ) : (
@@ -288,7 +356,7 @@ export default function DailyTrackerFormPage() {
             </main>
 
             {/* Toasts */}
-            <div className="toast-container" aria-live="polite">
+            <div className="toast-container">
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
@@ -298,6 +366,28 @@ export default function DailyTrackerFormPage() {
                     </div>
                 ))}
             </div>
+
+            <style jsx>{`
+                .hint-text {
+                    color: #64748b;
+                    font-size: 0.75rem;
+                    margin-top: 0.25rem;
+                    font-style: italic;
+                }
+                .spinner {
+                    display: inline-block;
+                    width: 1rem;
+                    height: 1rem;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    border-top-color: #fff;
+                    animation: spin 1s ease-in-out infinite;
+                    margin-right: 0.5rem;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }

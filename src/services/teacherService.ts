@@ -1,16 +1,7 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getImageUrl } from "@/lib/getImageUrl";
 import { COLLECTIONS } from "@/lib/constants";
-
-const TEACHER_ORDER = [
-    "Golam Kibria",
-    "Shaibal Shariar",
-    "Mohammad Abu Zabar Rezvhe",
-    "Md. Nesar Uddin",
-    "Abul Hayat",
-    "M M Naim Amran"
-];
 
 const TEACHER_IMAGES: Record<string, string> = {
     "Golam Kibria": "instructors/golam-kibria.jpeg",
@@ -31,6 +22,7 @@ export interface Teacher {
     email: string;
     profileImageUrl?: string;
     isAdmin: boolean;
+    order?: number; // Serial number for sorting
 }
 
 /**
@@ -39,7 +31,8 @@ export interface Teacher {
 export const getAllTeachers = async (): Promise<Teacher[]> => {
     try {
         const teachersRef = collection(db, COLLECTIONS.TEACHERS);
-        const snapshot = await getDocs(teachersRef);
+        const q = query(teachersRef, orderBy("order", "asc"));
+        const snapshot = await getDocs(q);
 
         const teachers = snapshot.docs.map(doc => {
             const data = doc.data() as Omit<Teacher, 'id'>;
@@ -53,20 +46,20 @@ export const getAllTeachers = async (): Promise<Teacher[]> => {
             } as Teacher;
         });
 
-        // Sort by custom required order first, then alphabetical
-        return teachers.sort((a, b) => {
-            const indexA = TEACHER_ORDER.indexOf(a.name);
-            const indexB = TEACHER_ORDER.indexOf(b.name);
-
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
-
-            return a.name.localeCompare(b.name);
-        });
+        return teachers;
     } catch (error: unknown) {
         console.error("Error fetching teachers:", error);
-        return [];
+        // Fallback: If orderBy fails (e.g., missing index or missing field on old docs), try without ordering
+        try {
+            const teachersRef = collection(db, COLLECTIONS.TEACHERS);
+            const snapshot = await getDocs(teachersRef);
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Teacher));
+        } catch (innerError) {
+            return [];
+        }
     }
 };
 
@@ -82,6 +75,7 @@ export const addTeacher = async (data: {
     email: string;
     profileImageUrl?: string;
     isAdmin?: boolean;
+    order?: number;
 }): Promise<string> => {
     try {
         const teachersRef = collection(db, COLLECTIONS.TEACHERS);
@@ -94,6 +88,7 @@ export const addTeacher = async (data: {
             email: data.email,
             profileImageUrl: data.profileImageUrl || "",
             isAdmin: data.isAdmin || false,
+            order: data.order || 0,
             createdAt: serverTimestamp()
         });
         return docRef.id;

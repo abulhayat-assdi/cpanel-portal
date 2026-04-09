@@ -1,32 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminServices } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the request
+    // 1. Authenticate the request (Optional but recommended)
     const sessionCookie = request.cookies.get('__session')?.value;
     if (!sessionCookie) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { adminAuth } = getAdminServices();
-    await adminAuth.verifyIdToken(sessionCookie);
+    const { adminAuth, adminDb } = getAdminServices();
+    try {
+        await adminAuth.verifyIdToken(sessionCookie);
+    } catch (authError) {
+        return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
 
+    // 2. Parse the payload
     const data = await request.json();
-    const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzBSz_U3ej-fVaWLK5aJj8mw88cBxk1Vohx_1v8anE-YGjwyNT8xGbkhN7xhCBCoK-D/exec";
+    const { studentName, batchName, date, tasks, score } = data;
 
-    const response = await fetch(googleScriptUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // Important: Google Apps Script expects stringified JSON in the body
-      body: JSON.stringify(data),
+    if (!studentName || !batchName || !date || !tasks) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // 3. Save to Firestore
+    const reportRef = adminDb.collection("daily_tracker_reports").doc();
+    await reportRef.set({
+        studentName,
+        batchName,
+        date,
+        tasks,
+        score: score || 0,
+        createdAt: FieldValue.serverTimestamp()
     });
 
-    const result = await response.json();
-    return NextResponse.json(result);
+    return NextResponse.json({ success: true, id: reportRef.id });
   } catch (err: any) {
-    console.error("Tracker Proxy Error:", err);
+    console.error("Tracker Submission Error:", err);
     return NextResponse.json(
       { success: false, message: "An internal error occurred while processing the request." },
       { status: 500 }
