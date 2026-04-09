@@ -90,7 +90,7 @@ const getCurrentWeekRange = () => {
  * Fetch class schedules for a specific teacher via API (Sheets) 
  * AND Firestore (for overrides/requests)
  */
-export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSchedule[]> => {
+export const getClassesByTeacherId = async (teacherId: string, filterCurrentWeek: boolean = true): Promise<ClassSchedule[]> => {
     try {
         // 1. Fetch Request/Status Overrides from Firestore
         // These are actions the teacher or admin took that might not be in Sheets yet
@@ -134,6 +134,7 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
         const weekRange = getCurrentWeekRange();
 
         return classes.filter(cls => {
+            if (!filterCurrentWeek) return true;
             const normalizedDate = getNormalizedDate(cls.date);
             // Strictly bound the view to Saturday-Friday week.
             return normalizedDate >= weekRange.start && normalizedDate <= weekRange.end;
@@ -191,7 +192,7 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
 /**
  * Fetch all class schedules from Firestore (For Admin Grid Sync)
  */
-export const getAllClassesSchedules = async (): Promise<ClassSchedule[]> => {
+export const getAllClassesSchedules = async (filterCurrentWeek: boolean = true): Promise<ClassSchedule[]> => {
     try {
         const schedulesRef = collection(db, "class_schedules");
         // Always try to return sorted by date natively if possible, or application level
@@ -208,6 +209,7 @@ export const getAllClassesSchedules = async (): Promise<ClassSchedule[]> => {
         const weekRange = getCurrentWeekRange();
 
         return schedules.filter(cls => {
+            if (!filterCurrentWeek) return true;
             const normalizedDate = getNormalizedDate(cls.date);
             return normalizedDate >= weekRange.start && normalizedDate <= weekRange.end;
         }).map(cls => {

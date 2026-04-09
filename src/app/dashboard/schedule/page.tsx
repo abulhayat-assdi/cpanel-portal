@@ -69,7 +69,7 @@ export default function SchedulePage() {
         setIsBatchSelectionModalOpen(true);
         setIsAddingSchedule(true);
         try {
-            const data = await getAllClassesSchedules();
+            const data = await getAllClassesSchedules(false);
             const batches = data.reduce((acc, curr) => {
                 const bName = curr.batch || "Unassigned";
                 acc[bName] = (acc[bName] || 0) + 1;
@@ -100,7 +100,7 @@ export default function SchedulePage() {
         setIsAddingSchedule(true);
         try {
             // Use cached schedules if available, or fetch
-            let data = allSchedules.length > 0 ? allSchedules : await getAllClassesSchedules();
+            let data = allSchedules.length > 0 ? allSchedules : await getAllClassesSchedules(false);
             
             if (batchFilter) {
                 data = data.filter(s => s.batch === batchFilter);
@@ -800,9 +800,9 @@ export default function SchedulePage() {
                                 // Fetch all schedules for this teacher (admin sees all)
                                 let data: ClassSchedule[] = [];
                                 if (userProfile?.role === 'admin') {
-                                    data = await getAllClassesSchedules();
+                                    data = await getAllClassesSchedules(false);
                                 } else if (userProfile?.teacherId) {
-                                    data = await getClassesByTeacherId(userProfile.teacherId);
+                                    data = await getClassesByTeacherId(userProfile.teacherId, false);
                                 }
                                 // No week filter — show all
                                 setAllSchedules(data.sort((a, b) => a.date > b.date ? -1 : 1));
