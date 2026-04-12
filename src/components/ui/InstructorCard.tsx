@@ -16,16 +16,10 @@ export default function InstructorCard({ name, role, description, email, image }
     const [copied, setCopied] = useState(false);
 
     const isBioShort = description === "Bio will be updated soon.";
-    const isAcademic = role.toLowerCase().includes("academic");
-    const isAdministrative = role.toLowerCase().includes("administrative");
-
-    const badgeColor = isAcademic
-        ? "bg-teal-50 text-teal-700 border-teal-200"
-        : isAdministrative
-            ? "bg-amber-50 text-amber-700 border-amber-200"
-            : "bg-purple-50 text-purple-700 border-purple-200";
-
-    const badgeLabel = isAcademic ? "Academic" : isAdministrative ? "Administrative" : "Executive";
+    const cleanRole = role
+        .replace(" (Academic)", "")
+        .replace(" (Executive)", "")
+        .replace(" (Administrative)", "").trim();
 
 
     const handleCopy = () => {
@@ -65,14 +59,9 @@ export default function InstructorCard({ name, role, description, email, image }
                     {name}
                 </h3>
 
-                {/* Designation */}
-                <p className="text-sm font-semibold text-gray-500 text-center mb-3 tracking-wide">
-                    {role.replace(" (Academic)", "").replace(" (Executive)", "")}
-                </p>
-
-                {/* Role badge */}
-                <span className={`inline-block text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-lg border-2 ${badgeColor}`}>
-                    {badgeLabel}
+                {/* Designation badge */}
+                <span className="inline-block text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-lg border-2 bg-emerald-50 text-emerald-700 border-emerald-200 text-center mb-1">
+                    {cleanRole}
                 </span>
             </div>
 

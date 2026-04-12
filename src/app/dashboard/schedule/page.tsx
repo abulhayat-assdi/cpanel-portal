@@ -155,12 +155,14 @@ export default function SchedulePage() {
 
         setLoading(true);
         try {
-            if (userProfile.role === "admin") {
-                const data = await getAllClassesSchedules();
+            if (userProfile.teacherId) {
+                // BOTH admin and teacher: if teacherId is set, show their personal schedule
+                // filterCurrentWeek=false so page-level visibleSchedule filter handles week filtering
+                const data = await getClassesByTeacherId(userProfile.teacherId, userProfile.uid, false);
                 setScheduleData(data);
-            } else if (userProfile.uid) {
-                // Pass both teacherId (numeric) and uid (Firebase) to correctly match schedules and overrides
-                const data = await getClassesByTeacherId(userProfile.teacherId || "", userProfile.uid);
+            } else if (userProfile.role === "admin") {
+                // Admin without teacherId: show all classes
+                const data = await getAllClassesSchedules();
                 setScheduleData(data);
             }
         } catch (error) {
@@ -201,16 +203,19 @@ export default function SchedulePage() {
         fetchBatchStats();
     }, []);
 
-    // Filter out completed classes (past dates that are completed)
-    // AND filter for current week
+    // For admin: filter current week. For teacher: show last 7 days + all future schedules.
+    const getTeacherDateBoundary = () => {
+        const past = new Date();
+        past.setDate(past.getDate() - 7); // 7 days ago
+        return past.toISOString().split('T')[0];
+    };
+
     const getWeekBoundaries = () => {
         const curr = new Date();
-        const first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
-        const last = first + 6; // last day is the first day + 6
-
+        const first = curr.getDate() - curr.getDay();
+        const last = first + 6;
         const firstday = new Date(curr.setDate(first));
         const lastday = new Date(curr.setDate(last));
-        
         return {
             start: firstday.toISOString().split('T')[0],
             end: lastday.toISOString().split('T')[0]
@@ -218,9 +223,10 @@ export default function SchedulePage() {
     };
 
     const weekBounds = getWeekBoundaries();
+    const teacherPastBoundary = getTeacherDateBoundary();
 
     const visibleSchedule = scheduleData.filter(schedule => {
-        // Normalize date format if needed to standard YYYY-MM-DD
+        // Normalize date format to YYYY-MM-DD
         let compareDate = schedule.date;
         const dmyMatch = schedule.date.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
         if (dmyMatch) {
@@ -228,15 +234,23 @@ export default function SchedulePage() {
              compareDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
         }
 
-        // Keep only within current week
-        if (compareDate < weekBounds.start || compareDate > weekBounds.end) {
-            return false;
+        if (userProfile?.role === 'admin') {
+            // Admin: current week only
+            if (compareDate < weekBounds.start || compareDate > weekBounds.end) {
+                return false;
+            }
+        } else {
+            // Teacher: last 7 days + all future
+            if (compareDate < teacherPastBoundary) {
+                return false;
+            }
         }
 
         return true;
     });
 
-    const displayedSchedule = showAll ? visibleSchedule : visibleSchedule.slice(0, 5);
+    const displayedSchedule = showAll ? visibleSchedule : visibleSchedule.slice(0, 10);
+
 
     const handleDoneClick = async (index: number) => {
         // Optimistic Update
@@ -580,7 +594,8 @@ export default function SchedulePage() {
         }
 
         if (schedule.status === "Pending") {
-            const uniqueKey = `${schedule.date}-${schedule.time}-${schedule.batch}`; // Better uniqueness using batch
+            // Include subject in uniqueKey to avoid expanding multiple rows with same date/time/batch
+            const uniqueKey = `${schedule.date}-${schedule.time}-${schedule.batch}-${schedule.subject}-${schedule.id || ''}`;
             const isProcessing = processingId === uniqueKey;
 
             return (
@@ -617,6 +632,15 @@ export default function SchedulePage() {
             );
         }
 
+        // Scheduled (future class)
+        if (schedule.status === "Scheduled" || schedule.status === "Upcoming") {
+            return (
+                <span className="px-4 py-1.5 bg-[#3b82f6] text-white text-sm font-medium rounded-full">
+                    Scheduled
+                </span>
+            );
+        }
+
         // New 'Requested' State
         if ((schedule.status as any) === "Requested") {
             return (
@@ -646,18 +670,21 @@ export default function SchedulePage() {
         return <div className="p-8 text-center text-[#6b7280]">Loading profile...</div>;
     }
 
-    if ((!userProfile?.uid || (userProfile?.role === "teacher" && !userProfile?.teacherId)) && userProfile?.role !== "admin") {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-[#6b7280] bg-white rounded-lg shadow-sm border border-gray-100">
-                <div className="p-3 bg-yellow-100 rounded-full mb-4">
-                    <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+    if (!userProfile?.uid || (userProfile?.role === "teacher" && !userProfile?.teacherId)) {
+        // Teacher without teacherId cannot see schedule
+        if (userProfile?.role === "teacher") {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 text-center text-[#6b7280] bg-white rounded-lg shadow-sm border border-gray-100">
+                    <div className="p-3 bg-yellow-100 rounded-full mb-4">
+                        <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-[#1f2937] mb-2">Teacher ID Not Linked</h2>
+                    <p className="max-w-md mx-auto">Your account is missing a Teacher ID (e.g., 101, 102). Please contact the administrator to link your Teacher ID to your account.</p>
                 </div>
-                <h2 className="text-xl font-bold text-[#1f2937] mb-2">Teacher ID Not Linked</h2>
-                <p className="max-w-md mx-auto">Your account (UID: {userProfile?.uid?.substring(0,8)}...) is missing a numeric **Teacher ID** (e.g., 101, 102). Without this, the system cannot match your classes from the schedule grid. Please contact the administrator to link your account.</p>
-            </div>
-        );
+            );
+        }
     }
 
     return (
@@ -671,13 +698,15 @@ export default function SchedulePage() {
                             Class Schedule
                         </h1>
                         <p className="text-[#6b7280] mt-1">
-                            {userProfile.role === "admin" 
-                                ? "Viewing schedule for all teachers (Current Week)" 
-                                : `Viewing schedule for Teacher ID: ${userProfile.teacherId || 'Not Linked'} (Current Week)`}
+                            {userProfile.teacherId
+                                ? `Viewing schedule for Teacher ID: ${userProfile.teacherId} (Last 7 Days & Upcoming)`
+                                : userProfile.role === "admin"
+                                    ? "Viewing all teacher schedules (Current Week)"
+                                    : "No Teacher ID linked to this account"}
                         </p>
                         {!userProfile.teacherId && userProfile.role !== "admin" && (
                             <p className="text-xs text-red-500 font-medium mt-1">
-                                ⚠️ Warning: Your profile is missing a numeric Teacher ID. Classes from the grid will not appear.
+                                ⚠️ Warning: Your profile is missing a Teacher ID. Classes from the grid will not appear.
                             </p>
                         )}
                     </div>
@@ -807,8 +836,8 @@ export default function SchedulePage() {
                                 let data: ClassSchedule[] = [];
                                 if (userProfile?.role === 'admin') {
                                     data = await getAllClassesSchedules(false);
-                                } else if (userProfile?.uid) {
-                                    data = await getClassesByTeacherId(userProfile.uid, false);
+                                } else if (userProfile?.teacherId) {
+                                    data = await getClassesByTeacherId(userProfile.teacherId, undefined, false);
                                 }
                                 // No week filter — show all
                                 setAllSchedules(data.sort((a, b) => a.date > b.date ? -1 : 1));

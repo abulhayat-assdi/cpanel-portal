@@ -1,12 +1,21 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import InstructorCard from "@/components/ui/InstructorCard";
-import { getAllTeachers } from "@/services/teacherService";
 import Link from "next/link";
 import { getAdminServices } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 export const dynamic = "force-dynamic";
+
+const TEACHER_IMAGES: Record<string, string> = {
+    "Golam Kibria": "instructors/golam-kibria.jpeg",
+    "Shaibal Shariar": "instructors/shaibal-shariar.jpg",
+    "Mohammad Abu Zabar Rezvhe": "instructors/abu-zabar-rezvhe.jpg",
+    "Md. Nesar Uddin": "instructors/nesar-uddin.jpg",
+    "Abul Hayat": "instructors/abul-hayat.jpg",
+    "M M Naim Amran": "instructors/naim-amran.jpg",
+};
 
 async function getAdminStatus() {
     const cookieStore = await cookies();
@@ -23,9 +32,46 @@ async function getAdminStatus() {
     }
 }
 
+async function getTeachers() {
+    try {
+        const { adminDb } = getAdminServices();
+        const snapshot = await adminDb
+            .collection("teachers")
+            .orderBy("order", "asc")
+            .get();
+
+        return snapshot.docs.map((doc) => {
+            const data = doc.data();
+            // Fallback to public images if profileImageUrl is missing
+            if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
+                data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
+            }
+            return {
+                id: doc.id,
+                ...data,
+            };
+        });
+    } catch (error) {
+        console.error("Error fetching teachers with ordering:", error);
+        // Fallback without ordering if index missing
+        try {
+            const { adminDb } = getAdminServices();
+            const snapshot = await adminDb.collection("teachers").get();
+            return snapshot.docs.map((doc) => {
+                const data = doc.data();
+                if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
+                    data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
+                }
+                return { id: doc.id, ...data };
+            });
+        } catch {
+            return [];
+        }
+    }
+}
+
 export default async function InstructorsPage() {
-    const instructors = await getAllTeachers();
-    const isAdmin = await getAdminStatus();
+    const [instructors, isAdmin] = await Promise.all([getTeachers(), getAdminStatus()]);
 
     const navLinks = [
         { label: "Home", href: "/" },
@@ -74,10 +120,10 @@ export default async function InstructorsPage() {
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
                         Dedicated professionals committed to helping you grow with practical skills and ethical values.
                     </p>
-                    
+
                     {isAdmin && (
                         <div className="mt-6">
-                            <Link 
+                            <Link
                                 href="/dashboard/teachers"
                                 className="inline-flex items-center gap-2 px-6 py-2 bg-[#059669] text-white font-bold rounded-full hover:bg-[#10b981] transition-all shadow-md"
                             >
@@ -90,11 +136,11 @@ export default async function InstructorsPage() {
                     )}
                 </div>
 
-                {/* 3. Instructors Grid Section */}
+                {/* Instructors Grid Section */}
                 <section className="w-full pb-16 md:pb-24 flex-grow relative z-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructors.map((instructor, index) => (
+                            {instructors.map((instructor: any, index: number) => (
                                 <InstructorCard
                                     key={instructor.id}
                                     index={index}

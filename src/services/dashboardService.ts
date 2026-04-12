@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, Timestamp, orderBy, FieldValue } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, FieldValue } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
 
@@ -102,9 +102,14 @@ export const addStudentNotice = async (notice: Omit<StudentNotice, "id">): Promi
  */
 export const getAllStudentNotices = async (): Promise<StudentNotice[]> => {
     try {
-        const q = query(collection(db, COLLECTIONS.STUDENT_NOTICES), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentNotice));
+        const snapshot = await getDocs(collection(db, COLLECTIONS.STUDENT_NOTICES));
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentNotice));
+        // Sort in-memory descending by createdAt
+        return docs.sort((a, b) => {
+            const aMs = (a.createdAt as any)?.toMillis?.() ?? 0;
+            const bMs = (b.createdAt as any)?.toMillis?.() ?? 0;
+            return bMs - aMs;
+        });
     } catch (error: unknown) {
         console.error("Error fetching student notices:", error);
         return [];
@@ -164,13 +169,14 @@ export const getAllClasses = async (): Promise<Class[]> => {
  */
 export const getAllNotices = async (): Promise<Notice[]> => {
     try {
-        const q = query(collection(db, COLLECTIONS.NOTICES), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Notice));
+        const snapshot = await getDocs(collection(db, COLLECTIONS.NOTICES));
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notice));
+        // Sort in-memory descending by createdAt
+        return docs.sort((a, b) => {
+            const aMs = (a.createdAt as any)?.toMillis?.() ?? 0;
+            const bMs = (b.createdAt as any)?.toMillis?.() ?? 0;
+            return bMs - aMs;
+        });
     } catch (error: unknown) {
         console.error("Error fetching notices:", error);
         return [];

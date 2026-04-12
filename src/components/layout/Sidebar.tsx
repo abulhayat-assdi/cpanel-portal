@@ -8,22 +8,25 @@ import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 import { submitContactMessage } from "@/services/contactService";
 import { serverTimestamp } from "firebase/firestore";
+import { useSidebarNotifications } from "@/hooks/useSidebarNotifications";
 
 const teacherAdminNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
     { href: "/dashboard/teachers", label: "Teacher Directory", icon: "👥", adminOnly: false },
     { href: "/dashboard/schedule", label: "Class Schedule", icon: "📅", adminOnly: false },
     { href: "/dashboard/all-batch-info", label: "All Batch Info", icon: "📊", adminOnly: false },
-    { href: "/dashboard/resources", label: "Resource Library", icon: "📚", adminOnly: false },
+    { href: "/dashboard/resources", label: "Resource Management", icon: "🗂️", adminOnly: false },
+    { href: "/dashboard/course-modules", label: "Course Modules", icon: "📚", adminOnly: false },
     { href: "/dashboard/policies", label: "Policy & Minutes", icon: "📋", adminOnly: false },
     { href: "/dashboard/feedback", label: "Feedback", icon: "💬", adminOnly: false },
     { href: "/dashboard/tracker", label: "Daily Tracker", icon: "📋", adminOnly: false },
     { href: "/dashboard/homework", label: "Homework", icon: "📝", adminOnly: false },
     { href: "/dashboard/admin", label: "Admin Panel", icon: "⚙️", adminOnly: true },
-    { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", adminOnly: true },
+    { href: "/dashboard/admin/manage-homework", label: "Manage Homework", icon: "📁", adminOnly: true },
+    { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", adminOnly: false },
     { href: "/dashboard/admin/student-updates", label: "Student Updates", icon: "🔔", adminOnly: true },
     { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", adminOnly: true },
-    { href: "/dashboard/admin/resource-management", label: "Resource Management", icon: "🗂️", adminOnly: true },
+    { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", adminOnly: true },
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
     { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
 ];
@@ -42,6 +45,16 @@ export default function Sidebar() {
     const router = useRouter();
     const { userProfile, logout, loading } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    
+    // Notifications hook
+    const { counts, markPageAsVisited } = useSidebarNotifications();
+
+    // Mark current path as visited
+    useEffect(() => {
+        if (pathname && !loading) {
+            markPageAsVisited(pathname);
+        }
+    }, [pathname, loading]);
 
     // Contact Modal State
     const [isContactOpen, setIsContactOpen] = useState(false);
@@ -149,12 +162,12 @@ export default function Sidebar() {
                         className="cursor-pointer group"
                         onClick={() => setIsMobileMenuOpen(false)}
                     >
-                        <div className="bg-[#0D1B2A] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm transition-all duration-300 ease-in-out group-hover:shadow-md group-hover:-translate-y-0.5">
+                        <div suppressHydrationWarning className="bg-[#0D1B2A] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm transition-all duration-300 ease-in-out group-hover:shadow-md group-hover:-translate-y-0.5">
                             {/* New Brand Logo */}
                             <BrandLogo size={36} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
 
                             {/* Text */}
-                            <div className="text-white font-bold text-sm leading-tight tracking-wide">
+                            <div suppressHydrationWarning className="text-white font-bold text-sm leading-tight tracking-wide">
                                 SALES <br />MARKETING
                             </div>
                         </div>
@@ -166,12 +179,16 @@ export default function Sidebar() {
                     <ul className="space-y-2">
                         {filteredNavItems.map((item) => {
                             const isActive = pathname === item.href;
+                            const badgeCount = counts[item.href] || 0;
                             return (
                                 <li key={item.href}>
                                     <Link
                                         href={item.href}
                                         prefetch={true}
-                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            markPageAsVisited(item.href);
+                                        }}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200",
                                             isActive
@@ -180,7 +197,12 @@ export default function Sidebar() {
                                         )}
                                     >
                                         <span className="text-xl">{item.icon}</span>
-                                        <span className="text-sm">{item.label}</span>
+                                        <span className="text-sm font-semibold">{item.label}</span>
+                                        {badgeCount > 0 && (
+                                            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-in fade-in zoom-in">
+                                                {badgeCount > 99 ? '99+' : badgeCount}
+                                            </span>
+                                        )}
                                     </Link>
                                 </li>
                             );

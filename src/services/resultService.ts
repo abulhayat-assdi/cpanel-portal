@@ -1,20 +1,46 @@
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, doc, setDoc, getDocs, getDoc, query, orderBy, Timestamp } from "firebase/firestore";
+
+export interface CustomColumn {
+    id: string;
+    label: string;
+}
+
+export interface ExamRecord {
+    id: string;
+    examName: string;
+    subjects: Record<string, string>;
+}
 
 export interface ExamResult {
     id: string; // generated ID
     batchName: string;
     roll: string;
     name: string;
-    marks: number | string;
-    remarks: string;
+    
+    // New tabular fields
+    customColumns?: CustomColumn[];
+    examRecords?: ExamRecord[];
+    
+    // Legacy fields
+    marks?: number | string;
+    remarks?: string;
     updatedAt?: Date;
 }
 
 const EXAM_RESULTS_COLLECTION = "exam_results";
 
+export const createDefaultExamRecord = (examName: string = ""): ExamRecord => ({
+    id: Math.random().toString(36).substring(2, 9),
+    examName,
+    subjects: {
+        sales: "", service: "", careerPlanning: "", ai: "",
+        metaMarketing: "", msOffice: "", landingPage: ""
+    }
+});
+
 /**
- * Saves or updates results for an entire batch.
+ * Saves or updates results for an entire batch (Legacy/Initial sync).
  */
 export const saveBatchResults = async (batchName: string, results: Omit<ExamResult, "id">[]): Promise<void> => {
     const savePromises = results.map(async (result) => {
@@ -31,6 +57,20 @@ export const saveBatchResults = async (batchName: string, results: Omit<ExamResu
 
     await Promise.all(savePromises);
 };
+
+/**
+ * Saves a single student's complete result grid.
+ */
+export const saveSingleResult = async (result: ExamResult): Promise<void> => {
+    const docId = result.id || `${result.batchName.replace(/\s+/g, '_')}_${result.roll}`;
+    const docRef = doc(db, EXAM_RESULTS_COLLECTION, docId);
+    
+    await setDoc(docRef, {
+        ...result,
+        id: docId,
+        updatedAt: Timestamp.now()
+    }, { merge: true });
+}
 
 /**
  * Retrieves all exam results across all batches.
@@ -54,16 +94,11 @@ export const getAllExamResults = async (): Promise<ExamResult[]> => {
  */
 export const getStudentResult = async (batchName: string, roll: string): Promise<ExamResult | null> => {
     try {
-        const docId = `${batchName.replace(/\s+/g, '_')}_${roll}`;
-        const q = query(collection(db, EXAM_RESULTS_COLLECTION));
-        const snapshot = await getDocs(q);
-        
-        const resultDoc = snapshot.docs.find(doc => {
-            const data = doc.data();
-            return data.batchName === batchName && data.roll === roll;
-        });
+        const docId = `${batchName.replace(/\\s+/g, '_')}_${roll}`;
+        const docRef = doc(db, EXAM_RESULTS_COLLECTION, docId);
+        const resultDoc = await getDoc(docRef);
 
-        if (resultDoc) {
+        if (resultDoc.exists()) {
             const data = resultDoc.data();
             return {
                 ...data,

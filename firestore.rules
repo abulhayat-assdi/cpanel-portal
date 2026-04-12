@@ -11,13 +11,17 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuth() && 
-        request.auth.token.role == 'admin';
+      return isAuth() && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     function isTeacher() {
-      return isAuth() && 
-        request.auth.token.role == 'teacher';
+      return isAuth() && (
+        request.auth.token.role == 'teacher' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher'
+      );
     }
 
     /* =====================================================
@@ -132,7 +136,15 @@ service cloud.firestore {
 
     // Exam Results
     match /exam_results/{docId} {
-      allow read: if isAuth() && (resource.data.studentUid == request.auth.uid || isAdmin() || isTeacher());
+      allow read: if isAuth() && (
+        isAdmin() || 
+        isTeacher() ||
+        resource == null ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentRoll == resource.data.roll &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentBatchName == resource.data.batchName
+        ) 
+      );
       allow write: if isAdmin();
     }
 
@@ -163,6 +175,19 @@ service cloud.firestore {
       );
     }
 
+    // Module Folders - teachers create/manage folders inside their modules
+    match /module_folders/{docId} {
+      // ✅ All authenticated users can read folders (batch filtering done client-side)
+      allow read: if isAuth();
+      // ✅ Only teachers/admins can create folders; teacher must own the folder
+      allow create: if (isTeacher() || isAdmin()) &&
+        request.resource.data.teacherUid == request.auth.uid;
+      // ✅ Owner teacher or admin can update/delete their folder
+      allow update, delete: if isAdmin() || (
+        isTeacher() && resource.data.teacherUid == request.auth.uid
+      );
+    }
+
     // Homework Submissions — Students create (owner-only), all auth read, admin/system deletes
     match /homework_submissions/{docId} {
       allow create: if isAuth() && 
@@ -172,6 +197,12 @@ service cloud.firestore {
       allow update: if false; // Homework cannot be edited once submitted
       // Only owner or admin can delete
       allow delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
+    }
+
+    // Homework Assignments — Teachers and Admins can create/delete/update, students can read.
+    match /homework_assignments/{docId} {
+      allow read: if isAuth();
+      allow write: if isTeacher() || isAdmin();
     }
 
     /* =====================================================

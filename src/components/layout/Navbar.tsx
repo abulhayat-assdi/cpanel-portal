@@ -94,17 +94,11 @@ export default function Navbar() {
                 {/* Right Section */}
                 <div className="flex items-center gap-6">
                     {/* Date & Time */}
-                    <div className="text-sm text-[#6b7280] hidden md:flex items-center gap-3">
-                        <span className="text-[#059669] font-medium">{currentDateTime.hijri}</span>
-                        <span className="text-[#d1d5db]">|</span>
-                        <span>{currentDateTime.english}</span>
+                    <div className="hidden md:flex items-center gap-3 bg-blue-50/80 border border-blue-200 px-4 py-1.5 rounded-xl shadow-sm backdrop-blur-sm">
+                        <span className="text-[#0284c7] font-bold text-sm tracking-wide">{currentDateTime.hijri}</span>
+                        <div className="w-px h-4 bg-blue-200"></div>
+                        <span className="text-[#1e3a8a] font-bold text-sm tracking-wide">{currentDateTime.english}</span>
                     </div>
-
-                    {/* Notification Icon */}
-                    <button className="relative p-2 text-[#6b7280] hover:text-[#1f2937] transition-colors">
-                        <span className="text-xl">🔔</span>
-                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
 
                     {/* User Profile */}
                     <div className="flex items-center gap-3">

@@ -12,6 +12,7 @@ export interface ModuleResource {
     moduleTitle: string;        // Title of the Course Module (for grouping)
     teacherName: string;        // Teacher name associated with the module
     teacherUid: string;         // UID of who uploaded
+    folderId?: string | null;   // null = root-level file (no folder), string = folder ID
     title: string;
     description?: string;
     fileType: string;           // pdf | pptx | docx | image | other
@@ -114,6 +115,56 @@ export const getModuleResourcesByTitle = async (
         });
     } catch (err) {
         console.error("Error fetching module resources:", err);
+        return [];
+    }
+};
+
+/**
+ * Get all resources inside a specific folder
+ */
+export const getModuleResourcesByFolder = async (
+    folderId: string
+): Promise<ModuleResource[]> => {
+    try {
+        const q = query(
+            collection(db, "module_resources"),
+            where("folderId", "==", folderId)
+        );
+        const snap = await getDocs(q);
+        const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as ModuleResource));
+        return results.sort((a, b) => {
+            const aTime = a.uploadedAt?.toMillis?.() ?? 0;
+            const bTime = b.uploadedAt?.toMillis?.() ?? 0;
+            return aTime - bTime;
+        });
+    } catch (err) {
+        console.error("Error fetching folder resources:", err);
+        return [];
+    }
+};
+
+/**
+ * Get root-level files for a module (folderId is null or missing) — backward compatible
+ */
+export const getModuleResourcesByModuleRoot = async (
+    moduleTitle: string
+): Promise<ModuleResource[]> => {
+    try {
+        const q = query(
+            collection(db, "module_resources"),
+            where("moduleTitle", "==", moduleTitle)
+        );
+        const snap = await getDocs(q);
+        const results = snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as ModuleResource))
+            .filter(r => !r.folderId); // root = no folderId
+        return results.sort((a, b) => {
+            const aTime = a.uploadedAt?.toMillis?.() ?? 0;
+            const bTime = b.uploadedAt?.toMillis?.() ?? 0;
+            return aTime - bTime;
+        });
+    } catch (err) {
+        console.error("Error fetching root module resources:", err);
         return [];
     }
 };

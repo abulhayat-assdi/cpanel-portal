@@ -35,20 +35,30 @@ export async function GET(req: NextRequest) {
             lastLogin: profileData?.lastLogin?.toDate() || new Date(),
         };
 
-        // 4. Server-side Enrichment for Teachers
+        // 4. Server-side Enrichment: Match teacher directory for all non-student users
         if (profile.role !== AUTH_ROLES.STUDENT) {
             try {
                 const teachersSnapshot = await adminDb.collection(COLLECTIONS.TEACHERS).get();
                 const allTeachers = teachersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                // Match by loginEmail (portal login email) or display email
                 const teacherMatch: any = allTeachers.find((t: any) =>
-                    (profile.email && t.email?.toLowerCase() === profile.email.toLowerCase()) ||
-                    t.name === profile.displayName
+                    profile.email && (
+                        t.loginEmail?.toLowerCase() === profile.email.toLowerCase() ||
+                        t.email?.toLowerCase() === profile.email.toLowerCase()
+                    )
                 );
 
                 if (teacherMatch) {
-                    if (!profile.teacherId && teacherMatch.teacherId && profile.role === AUTH_ROLES.TEACHER) {
+                    // Always sync teacherId from the teacher directory (source of truth)
+                    if (teacherMatch.teacherId) {
                         profile.teacherId = teacherMatch.teacherId;
+                        // Persistently save to Firestore users doc if missing or different
+                        if (profileData.teacherId !== teacherMatch.teacherId) {
+                            await adminDb.collection(COLLECTIONS.USERS).doc(uid).update({
+                                teacherId: teacherMatch.teacherId
+                            }).catch(() => {}); // silently ignore if update fails
+                        }
                     }
                     if (!profile.profileImageUrl && teacherMatch.profileImageUrl) {
                         profile.profileImageUrl = teacherMatch.profileImageUrl;

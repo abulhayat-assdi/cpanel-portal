@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getImageUrl } from "@/lib/getImageUrl";
 import { COLLECTIONS } from "@/lib/constants";
@@ -13,16 +13,17 @@ const TEACHER_IMAGES: Record<string, string> = {
 };
 
 export interface Teacher {
-    id: string; // Firestore Doc ID
-    teacherId: string; // Custom ID like ID-101
+    id: string;           // Firestore Doc ID
+    teacherId: string;    // Custom ID like ID-101
     name: string;
     designation: string;
     about: string;
     phone: string;
-    email: string;
+    email: string;        // Display email (shown on portal & public page)
+    loginEmail?: string;  // Login email (used for Firebase Auth login) - if missing, falls back to email
     profileImageUrl?: string;
     isAdmin: boolean;
-    order?: number; // Serial number for sorting
+    order?: number;       // Serial number for sorting
 }
 
 /**
@@ -31,35 +32,26 @@ export interface Teacher {
 export const getAllTeachers = async (): Promise<Teacher[]> => {
     try {
         const teachersRef = collection(db, COLLECTIONS.TEACHERS);
-        const q = query(teachersRef, orderBy("order", "asc"));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(teachersRef);
 
-        const teachers = snapshot.docs.map(doc => {
-            const data = doc.data() as Omit<Teacher, 'id'>;
+        const teachers = snapshot.docs.map(docSnap => {
+            const data = docSnap.data() as Omit<Teacher, 'id'>;
             // Fallback to public images if their profileImageUrl is missing
             if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
                 data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
             }
             return {
-                id: doc.id,
+                id: docSnap.id,
                 ...data
             } as Teacher;
         });
 
-        return teachers;
+        // Sort in-memory by order field (no Firestore composite index needed)
+        return teachers.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
     } catch (error: unknown) {
         console.error("Error fetching teachers:", error);
-        // Fallback: If orderBy fails (e.g., missing index or missing field on old docs), try without ordering
-        try {
-            const teachersRef = collection(db, COLLECTIONS.TEACHERS);
-            const snapshot = await getDocs(teachersRef);
-            return snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as Teacher));
-        } catch (innerError) {
-            return [];
-        }
+        return [];
     }
 };
 
@@ -72,7 +64,8 @@ export const addTeacher = async (data: {
     designation: string;
     about: string;
     phone: string;
-    email: string;
+    email: string;         // display email
+    loginEmail?: string;   // login email (for Firebase Auth)
     profileImageUrl?: string;
     isAdmin?: boolean;
     order?: number;
@@ -85,7 +78,8 @@ export const addTeacher = async (data: {
             designation: data.designation,
             about: data.about || "",
             phone: data.phone,
-            email: data.email,
+            email: data.email,           // display email
+            loginEmail: data.loginEmail || data.email,  // login email, falls back to display email
             profileImageUrl: data.profileImageUrl || "",
             isAdmin: data.isAdmin || false,
             order: data.order || 0,

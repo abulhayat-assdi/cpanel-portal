@@ -7,14 +7,18 @@ import Button from "@/components/ui/Button";
 import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Portal owner email — only this account can grant/revoke admin access
+const PORTAL_OWNER_EMAIL = "mohammadabulhayatt@gmail.com";
+
 export default function TeachersPage() {
     const { user, userProfile } = useAuth();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Admin check
+    // Role checks
     const isAdminUser = userProfile?.role === "admin";
+    const isPortalOwner = userProfile?.email?.toLowerCase() === PORTAL_OWNER_EMAIL.toLowerCase();
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,14 +31,15 @@ export default function TeachersPage() {
     const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Form state
+    // Form state — two email fields
     const [formData, setFormData] = useState({
         teacherId: "",
         name: "",
         designation: "",
         about: "",
         phone: "",
-        email: "",
+        email: "",        // display email (shown on portal & public page)
+        loginEmail: "",   // login email (used for Firebase Auth)
         password: "",
         profileImageUrl: "",
         isAdmin: false,
@@ -68,6 +73,7 @@ export default function TeachersPage() {
             about: "",
             phone: "",
             email: "",
+            loginEmail: "",
             password: "",
             profileImageUrl: "",
             isAdmin: false,
@@ -92,14 +98,22 @@ export default function TeachersPage() {
         }
     };
 
-    // Open Add Modal
+    // Open Add Modal — only admin can add
     const openAddModal = () => {
+        if (!isAdminUser) {
+            alert("Only admins can add teachers.");
+            return;
+        }
         resetForm();
         setIsModalOpen(true);
     };
 
-    // Open Edit Modal
+    // Open Edit Modal — only admin can edit
     const openEditModal = (teacher: Teacher) => {
+        if (!isAdminUser) {
+            alert("Only admins can edit teachers.");
+            return;
+        }
         setEditingTeacher(teacher);
         setFormData({
             teacherId: teacher.teacherId,
@@ -108,14 +122,14 @@ export default function TeachersPage() {
             about: teacher.about || "",
             phone: teacher.phone,
             email: teacher.email,
+            loginEmail: teacher.loginEmail || teacher.email, // fallback for old records
             password: "", // intentionally blank for edit
             profileImageUrl: teacher.profileImageUrl || "",
-            isAdmin: Boolean(teacher.isAdmin), // Ensure boolean type
+            isAdmin: Boolean(teacher.isAdmin),
             order: teacher.order || 0,
         });
         setImagePreview(teacher.profileImageUrl || null);
         setIsEditMode(true);
-
         setIsModalOpen(true);
     };
 
@@ -133,6 +147,29 @@ export default function TeachersPage() {
             return;
         }
 
+        if (!isAdminUser) {
+            alert("Only admins can manage teachers.");
+            return;
+        }
+
+        // Validate: if isAdmin is being granted, must be portal owner
+        if (formData.isAdmin && !isPortalOwner) {
+            // If editing and isAdmin was already true (no change), it's OK
+            const wasAlreadyAdmin = isEditMode && editingTeacher?.isAdmin === true;
+            if (!wasAlreadyAdmin) {
+                alert("Only the portal owner (Abul Hayat) can grant admin access.");
+                setFormData(prev => ({ ...prev, isAdmin: false }));
+                return;
+            }
+        }
+
+        // Validate: if revoking admin, must be portal owner
+        if (isEditMode && editingTeacher?.isAdmin === true && !formData.isAdmin && !isPortalOwner) {
+            alert("Only the portal owner (Abul Hayat) can revoke admin access.");
+            setFormData(prev => ({ ...prev, isAdmin: true }));
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             let finalImageUrl = formData.profileImageUrl;
@@ -141,7 +178,7 @@ export default function TeachersPage() {
             if (selectedFile) {
                 const uploadFormData = new FormData();
                 uploadFormData.append("file", selectedFile);
-                
+
                 const uploadRes = await fetch("/api/upload", {
                     method: "POST",
                     body: uploadFormData,
@@ -156,40 +193,75 @@ export default function TeachersPage() {
             }
 
             if (isEditMode && editingTeacher) {
-                // Update existing teacher
+                // --- EDIT MODE ---
+
+                // Get fresh token for admin API calls
+                const freshToken = user ? await user.getIdToken(true) : "";
+                document.cookie = `__session=${freshToken}; path=/; max-age=86400; SameSite=Lax`;
+
+                const oldLoginEmail = editingTeacher.loginEmail || editingTeacher.email;
+                const newLoginEmail = formData.loginEmail;
+                const adminChanged = formData.isAdmin !== Boolean(editingTeacher.isAdmin);
+                const loginEmailChanged = newLoginEmail !== oldLoginEmail;
+
+                // If login email or admin status changed, call server-side API
+                if (loginEmailChanged || adminChanged) {
+                    const updateBody: any = { firestoreDocId: editingTeacher.id };
+                    if (loginEmailChanged) updateBody.newLoginEmail = newLoginEmail;
+                    if (adminChanged) updateBody.isAdmin = formData.isAdmin;
+
+                    const res = await fetch("/api/admin/update-teacher", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${freshToken}`,
+                        },
+                        body: JSON.stringify(updateBody),
+                    });
+
+                    const result = await res.json();
+                    if (!res.ok) {
+                        throw new Error(result.error || "Failed to update teacher auth/role.");
+                    }
+                }
+
+                // Always update Firestore teacher doc directly
                 await updateTeacher(editingTeacher.id, {
                     teacherId: formData.teacherId,
                     name: formData.name,
                     designation: formData.designation,
                     about: formData.about,
                     phone: formData.phone,
-                    email: formData.email,
+                    email: formData.email,           // display email
+                    loginEmail: formData.loginEmail, // login email
                     profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
                     order: Number(formData.order),
                 });
             } else {
-                // IMPORTANT: Refresh the ID token before calling the API
+                // --- ADD MODE ---
+
+                // Get fresh token
                 let freshToken = "";
                 if (user) {
                     freshToken = await user.getIdToken(true);
-                    // Sync cookie as well for other routes
                     document.cookie = `__session=${freshToken}; path=/; max-age=86400; SameSite=Lax`;
                 }
 
-                // Add new teacher in Firebase Auth FIRST via secure backend
+                // Create Firebase Auth user via secure backend (uses loginEmail)
                 const response = await fetch("/api/admin/create-teacher", {
                     method: "POST",
-                    headers: { 
+                    headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${freshToken}`
+                        Authorization: `Bearer ${freshToken}`,
                     },
                     body: JSON.stringify({
-                        email: formData.email,
+                        loginEmail: formData.loginEmail,
+                        displayEmail: formData.email,
                         password: formData.password,
                         name: formData.name,
                         phone: formData.phone,
-                        role: formData.isAdmin ? "admin" : "teacher",
+                        isAdmin: formData.isAdmin,
                         order: Number(formData.order),
                     }),
                 });
@@ -199,14 +271,15 @@ export default function TeachersPage() {
                     throw new Error(result.error || result.message || "Failed to create teacher account.");
                 }
 
-                // Add to standard Teachers directory collection now that auth succeeded
+                // Add to teachers collection
                 await addTeacher({
                     teacherId: formData.teacherId,
                     name: formData.name,
                     designation: formData.designation,
                     about: formData.about,
                     phone: formData.phone,
-                    email: formData.email,
+                    email: formData.email,         // display email
+                    loginEmail: formData.loginEmail, // login email
                     profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
                     order: Number(formData.order),
@@ -310,12 +383,7 @@ export default function TeachersPage() {
             ) : filteredTeachers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredTeachers.map((teacher) => {
-                        // Check permissions
-                        const isOwner = userProfile?.email?.toLowerCase() === teacher.email.toLowerCase();
-                        
-                        // Edit allowed for admin OR owner
-                        // Delete allowed ONLY for admin
-                        const canEdit = isAdminUser || isOwner;
+                        const canEdit = isAdminUser;
                         const canDelete = isAdminUser;
 
                         return (
@@ -414,24 +482,45 @@ export default function TeachersPage() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                                    Phone *
+                                </label>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    placeholder="e.g., 01712345678"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
+                                />
+                            </div>
+
+                            {/* TWO EMAIL FIELDS */}
+                            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 space-y-3">
+                                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                                    Email Configuration
+                                </p>
+
                                 <div>
                                     <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                                        Phone *
+                                        🔐 Login Email *
+                                        <span className="ml-1 text-xs font-normal text-gray-500">(used to sign in to the portal)</span>
                                     </label>
                                     <input
-                                        type="tel"
+                                        type="email"
                                         required
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        placeholder="e.g., 01712345678"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
+                                        value={formData.loginEmail}
+                                        onChange={(e) => setFormData({ ...formData, loginEmail: e.target.value })}
+                                        placeholder="e.g., teacher.login@gmail.com"
+                                        className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                                        Email *
+                                        📧 Display Email *
+                                        <span className="ml-1 text-xs font-normal text-gray-500">(shown on portal & public page)</span>
                                     </label>
                                     <input
                                         type="email"
@@ -439,11 +528,11 @@ export default function TeachersPage() {
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         placeholder="e.g., teacher@example.com"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
+                                        className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                                     />
                                 </div>
                             </div>
-                            
+
                             {!isEditMode && (
                                 <div>
                                     <label className="block text-sm font-medium text-[#1f2937] mb-1">
@@ -474,22 +563,43 @@ export default function TeachersPage() {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
                                     />
                                 </div>
-                                
+
                                 <div className="flex items-end pb-1">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="isAdmin"
-                                            checked={formData.isAdmin}
-                                            onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
-                                            className="w-4 h-4 text-[#059669] border-gray-300 rounded focus:ring-[#059669]"
-                                        />
-                                        <label htmlFor="isAdmin" className="text-sm font-medium text-[#1f2937]">
-                                            Grant Admin Access
-                                        </label>
-                                    </div>
+                                    {isPortalOwner ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id="isAdmin"
+                                                checked={formData.isAdmin}
+                                                onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
+                                                className="w-4 h-4 text-[#059669] border-gray-300 rounded focus:ring-[#059669]"
+                                            />
+                                            <label htmlFor="isAdmin" className="text-sm font-medium text-[#1f2937]">
+                                                Grant Admin Access
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 opacity-50 cursor-not-allowed" title="Only the portal owner can grant admin access">
+                                            <input
+                                                type="checkbox"
+                                                id="isAdmin"
+                                                checked={formData.isAdmin}
+                                                disabled
+                                                className="w-4 h-4 text-gray-300 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor="isAdmin" className="text-sm font-medium text-gray-400">
+                                                Grant Admin Access
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+
+                            {!isPortalOwner && (
+                                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                                    ⚠️ Only the portal owner can grant or revoke admin access.
+                                </p>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-[#1f2937] mb-1">
@@ -498,9 +608,9 @@ export default function TeachersPage() {
                                 <div className="flex items-center gap-4">
                                     {imagePreview && (
                                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#059669] flex-shrink-0">
-                                            <img 
-                                                src={imagePreview} 
-                                                alt="Preview" 
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>

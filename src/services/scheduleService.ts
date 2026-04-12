@@ -140,7 +140,7 @@ export const getClassesByTeacherId = async (teacherId: string, teacherUid?: stri
                 fc.subject === cls.subject
             );
 
-            let computedStatus: ClassSchedule["status"] = "Pending";
+            let computedStatus: ClassSchedule["status"] = "Scheduled";
 
             if (override) {
                 if (override.status === "REQUEST_TO_COMPLETE") {
@@ -153,12 +153,15 @@ export const getClassesByTeacherId = async (teacherId: string, teacherUid?: stri
             } else {
                 if (currentStatusLower === 'completed') {
                     computedStatus = "Completed";
+                } else if (normalizedDate === today) {
+                    // Only today's classes get the "Today" (Done button) status
+                    computedStatus = "Today";
+                } else if (normalizedDate < today) {
+                    // Past uncompleted classes are "Pending" (can request completion)
+                    computedStatus = "Pending";
                 } else {
-                    if (normalizedDate <= today) {
-                        computedStatus = "Today";
-                    } else {
-                        computedStatus = "Pending";
-                    }
+                    // Future classes are simply "Scheduled"
+                    computedStatus = "Scheduled";
                 }
             }
 
@@ -205,11 +208,16 @@ export const getAllClassesSchedules = async (filterCurrentWeek: boolean = true):
             return normalizedDate >= weekRange.start && normalizedDate <= weekRange.end;
         }).map(cls => {
             const normalizedDate = getNormalizedDate(cls.date);
-            let computedStatus: ClassSchedule["status"] = "Pending";
+            let computedStatus: ClassSchedule["status"] = "Scheduled";
 
-            // Treat today and any past uncompleted class as "Today" (meaning it needs "Done" button)
-            if (normalizedDate <= today) {
+            // Treat today classes as "Today" (meaning it needs "Done" button)
+            if (normalizedDate === today) {
                 computedStatus = "Today";
+            } else if (normalizedDate < today) {
+                // Past uncompleted class
+                computedStatus = "Pending";
+            } else {
+                computedStatus = "Scheduled";
             }
 
             // Note: we're not checking completion overrides here for simplicity unless requested

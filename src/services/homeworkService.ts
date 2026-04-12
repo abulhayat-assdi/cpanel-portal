@@ -3,6 +3,13 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 
+export interface UploadedFile {
+    fileUrl: string;
+    storagePath: string;
+    fileName: string;
+    fileSize: number; // bytes
+}
+
 export interface HomeworkSubmission {
     id: string;
     studentUid: string;
@@ -11,15 +18,31 @@ export interface HomeworkSubmission {
     studentBatchName: string;
     teacherName: string;
     subject: string;
+    // Legacy single-file fields (kept for backward compat)
     fileUrl?: string;
     storagePath?: string;
     fileName?: string;
+    // New multi-file support
+    files?: UploadedFile[];
     textContent?: string;
     submittedAt: any;
     submissionDate: string; // "30 Mar 26" format
+    assignmentId?: string;
 }
 
 const HOMEWORK_COLLECTION = "homework_submissions";
+const HOMEWORK_ASSIGNMENTS_COLLECTION = "homework_assignments";
+
+export interface HomeworkAssignment {
+    id: string;
+    teacherUid: string;
+    teacherName: string;
+    title: string;
+    deadlineDate: string; // YYYY-MM-DD format usually
+    batchName: string; // "all" or specific batch
+    createdAt: any;
+}
+
 
 /**
  * Format date as "30 Mar 26"
@@ -88,6 +111,50 @@ export const uploadHomeworkFile = (
             reject(err);
         }
     });
+};
+
+/**
+ * Upload multiple homework files sequentially, reporting combined progress
+ * Returns an array of UploadedFile objects
+ */
+export const uploadMultipleHomeworkFiles = async (
+    files: File[],
+    batchName: string,
+    onProgress?: (progress: number) => void
+): Promise<UploadedFile[]> => {
+    const results: UploadedFile[] = [];
+    const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+    let uploadedSize = 0;
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileSizeBefore = uploadedSize;
+
+        const result = await uploadHomeworkFile(
+            file,
+            batchName,
+            (fileProgress) => {
+                // Calculate overall progress across all files
+                const fileContribution = (file.size / totalSize) * fileProgress;
+                const prevContribution = (fileSizeBefore / totalSize) * 100;
+                const overallProgress = Math.round(prevContribution + fileContribution * (file.size / totalSize));
+                onProgress?.(Math.min(overallProgress, 99));
+            }
+        );
+
+        results.push({
+            fileUrl: result.fileUrl,
+            storagePath: result.storagePath,
+            fileName: result.fileName,
+            fileSize: file.size,
+        });
+
+        uploadedSize += file.size;
+        // Report accurate overall progress after each file completes
+        onProgress?.(Math.round((uploadedSize / totalSize) * 100));
+    }
+
+    return results;
 };
 
 /**
@@ -164,15 +231,17 @@ export const getHomeworkByStudent = async (studentUid: string): Promise<Homework
  */
 export const getAllHomework = async (): Promise<HomeworkSubmission[]> => {
     try {
-        const q = query(
-            collection(db, HOMEWORK_COLLECTION),
-            orderBy("submittedAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(d => ({
+        const snapshot = await getDocs(collection(db, HOMEWORK_COLLECTION));
+        const docs = snapshot.docs.map(d => ({
             id: d.id,
             ...d.data()
         } as HomeworkSubmission));
+        // Sort in-memory to avoid needing a Firestore composite index
+        return docs.sort((a, b) => {
+            const aMs = a.submittedAt?.toMillis?.() ?? 0;
+            const bMs = b.submittedAt?.toMillis?.() ?? 0;
+            return bMs - aMs;
+        });
     } catch (error) {
         console.error("Error fetching all homework:", error);
         return [];
@@ -253,4 +322,74 @@ export const cleanupCompletedBatchHomework = async (
     }
 
     return totalDeleted;
+};
+
+/**
+ * ASSIGNMENTS
+ */
+
+export const createHomeworkAssignment = async (
+    data: Omit<HomeworkAssignment, "id" | "createdAt">
+): Promise<string> => {
+    try {
+        const payload = {
+            ...data,
+            createdAt: Timestamp.now(),
+        };
+        const docRef = await addDoc(collection(db, HOMEWORK_ASSIGNMENTS_COLLECTION), payload);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating homework assignment:", error);
+        throw error;
+    }
+};
+
+export const getHomeworkAssignmentsByTeacher = async (teacherName: string): Promise<HomeworkAssignment[]> => {
+    try {
+        const q = query(
+            collection(db, HOMEWORK_ASSIGNMENTS_COLLECTION),
+            where("teacherName", "==", teacherName)
+        );
+        const snapshot = await getDocs(q);
+        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as HomeworkAssignment));
+        return docs.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    } catch (error) {
+        console.error("Error fetching assignments by teacher:", error);
+        return [];
+    }
+};
+
+export const getActiveHomeworkAssignmentsForStudent = async (studentBatchName: string): Promise<HomeworkAssignment[]> => {
+    try {
+        const snapshot = await getDocs(collection(db, HOMEWORK_ASSIGNMENTS_COLLECTION));
+        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as HomeworkAssignment));
+        
+        const nowStr = new Date().toISOString().split('T')[0];
+
+        // Filter valid assignments for this student
+        const filtered = docs.filter(a => {
+            const matchesBatch = a.batchName === "all" || a.batchName === studentBatchName;
+            const notExpired = a.deadlineDate >= nowStr;
+            return matchesBatch && notExpired;
+        });
+
+        // Sort in-memory descending
+        return filtered.sort((a, b) => {
+            const aMs = a.createdAt?.toMillis?.() ?? 0;
+            const bMs = b.createdAt?.toMillis?.() ?? 0;
+            return bMs - aMs;
+        });
+    } catch (error) {
+        console.error("Error fetching assignments for student:", error);
+        return [];
+    }
+};
+
+export const deleteHomeworkAssignment = async (id: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, HOMEWORK_ASSIGNMENTS_COLLECTION, id));
+    } catch (error) {
+        console.error("Error deleting assignment:", error);
+        throw error;
+    }
 };
