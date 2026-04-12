@@ -87,7 +87,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             {/* Login Card */}
             <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
                 {/* Icon */}

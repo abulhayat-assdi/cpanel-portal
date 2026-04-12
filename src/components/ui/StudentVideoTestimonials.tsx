@@ -68,7 +68,7 @@ export default function StudentVideoTestimonials() {
     const offset = isMobile ? activeIndex * 100 : activeIndex * 60;
 
     return (
-        <section className="bg-gray-50 pt-8 pb-16 md:pt-12 md:pb-24 overflow-hidden relative">
+        <section className="bg-gray-50 overflow-hidden relative py-[15px]">
             <div className="container mx-auto px-4 md:px-8">
                 <div className="text-center mb-10 flex flex-col items-center">
                     <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-100/50 border border-emerald-200 text-emerald-800 text-sm font-semibold mb-3 tracking-wide uppercase">
@@ -157,7 +157,7 @@ export default function StudentVideoTestimonials() {
                                                         {video.studentName}
                                                     </span>
                                                 )}
-                                                <h3 className="line-clamp-2 drop-shadow-lg text-xl md:text-3xl font-bold leading-tight">{video.title}</h3>
+                                                <h3 className="line-clamp-2 drop-shadow-lg text-xl md:text-3xl font-bold leading-tight no-gradient text-white">{video.title}</h3>
                                             </div>
                                         </div>
                                     </div>

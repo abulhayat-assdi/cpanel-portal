@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f9fa;
+  --background: #f8fafc;
   --foreground: #1f2937;
 
   /* Brand Greens */
@@ -17,7 +17,7 @@
   --brand-900: #145231;
 
   /* Surface Colors */
-  --surface-app: #f8f9fa;
+  --surface-app: #f8fafc;
   --surface-card: #ffffff;
   --surface-hover: #f3f4f6;
   --surface-border: #e5e7eb;

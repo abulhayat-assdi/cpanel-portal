@@ -8,7 +8,7 @@ export default function StudentDashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-[#f8f9fa]">
+        <div className="min-h-screen bg-slate-50">
             {/* Sidebar */}
             <Sidebar />
 

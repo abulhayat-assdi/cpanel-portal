@@ -83,7 +83,7 @@ export default function TargetAudience({
         <section
             ref={sectionRef}
             className={cn(
-                "relative w-full py-24 md:py-32 overflow-hidden bg-gradient-to-b from-white to-slate-50",
+                "relative w-full py-[15px] md:py-[15px] overflow-hidden bg-gradient-to-b from-white to-slate-50",
                 className
             )}
         >
@@ -112,7 +112,7 @@ export default function TargetAudience({
                         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
                             {title}
                         </h2>
-                        <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-medium">
+                        <p className="text-lg md:text-xl text-transparent bg-clip-text bg-gradient-to-r from-[#374151] to-[#059669] leading-relaxed font-medium">
                             {subtitle}
                         </p>
                     </div>

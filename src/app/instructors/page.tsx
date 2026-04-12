@@ -121,7 +121,7 @@ export default async function InstructorsPage() {
                 ctaText="Enroll"
             />
 
-            <main className="min-h-screen bg-[#fafaf9] flex flex-col">
+            <main className="min-h-screen bg-slate-50 flex flex-col">
                 {/* Clean Page Header */}
                 <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center relative">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">

@@ -34,7 +34,7 @@ const learningPrinciples = [
 
 export default function LearningPhilosophySection() {
     return (
-        <section className="relative w-full py-20 md:py-28 bg-slate-50 overflow-hidden border-t border-gray-100">
+        <section className="relative w-full bg-slate-50 overflow-hidden border-t border-gray-100 py-[15px]">
             {/* Background Visual Element (Subtle Rings) */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.03] hidden lg:block pointer-events-none">
                 <svg className="w-[800px] h-[800px]" viewBox="0 0 800 800" fill="none">
@@ -51,7 +51,7 @@ export default function LearningPhilosophySection() {
                         </h2>
                     </Reveal>
                     <Reveal delay={100} width="100%">
-                        <p className="text-lg text-gray-600 leading-relaxed font-medium">
+                        <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-[#374151] to-[#059669] leading-relaxed font-medium">
                             This course focuses on practical learning that builds confidence, responsibility, and real-world capability.
                         </p>
                     </Reveal>

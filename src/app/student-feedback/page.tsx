@@ -105,7 +105,7 @@ export default function StudentFeedbackPage() {
         <>
             <Header brandText="Sales & Marketing" navLinks={navLinks} ctaText="Enroll" />
 
-            <main className="min-h-screen bg-gradient-to-br from-[#f0fdf4] via-[#fafaf9] to-[#ecfdf5] flex flex-col">
+            <main className="min-h-screen bg-slate-50 flex flex-col">
                 {/* Hero Section */}
                 <div className="pt-10 pb-8 w-full max-w-3xl mx-auto px-6 text-center">
                     {/* Icon */}

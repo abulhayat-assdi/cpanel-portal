@@ -41,7 +41,7 @@ function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id
                 </div>
             </div>
             <div className="absolute bottom-0 left-0 right-0 px-5 py-4">
-                <h3 className="text-white font-bold text-base leading-snug mb-2 line-clamp-2 drop-shadow-md">
+                <h3 className="text-white font-bold text-base leading-snug mb-2 line-clamp-2 drop-shadow-md no-gradient">
                     {story.title}
                 </h3>
                 {story.studentName && (
@@ -116,7 +116,7 @@ export default function SuccessStoriesContent() {
         <>
             {/* Video Gallery */}
             {videos.length > 0 && (
-                <section className="w-full py-8 md:py-10">
+                <section className="w-full py-[15px]">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                             {videos.map((story) => (
@@ -196,7 +196,7 @@ export default function SuccessStoriesContent() {
 
             {/* CTA */}
             {(videos.length > 0 || reviews.length > 0) && (
-                <section className="w-full pb-16 md:pb-20">
+                <section className="w-full py-[15px]">
                     <div className="text-center">
                         <Link
                             href="/enroll"

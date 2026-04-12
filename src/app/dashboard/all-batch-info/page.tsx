@@ -126,7 +126,7 @@ export default function AllBatchInfoPage() {
 
     // Grid Data Ref
     const MAX_ROWS = 200;
-    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
+    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTK", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
     const gridRef = useRef<HTMLTableElement>(null);
     const rowDataRef = useRef<Record<string, string>[]>([]);
 
@@ -255,6 +255,7 @@ export default function AllBatchInfoPage() {
                     educationalDegree: student.educationalDegree || "",
                     category: student.category || "",
                     bloodGroup: student.bloodGroup || "",
+                    totalPaidTK: student.totalPaidTK ? student.totalPaidTK.toString() : "",
                     address: student.address || "",
                     courseStatus: student.courseStatus || "",
                     currentlyDoing: student.currentlyDoing || "",
@@ -351,6 +352,7 @@ export default function AllBatchInfoPage() {
                 educationalDegree: row.educationalDegree || "",
                 category: (row.category || "") as StudentBatchInfo['category'],
                 bloodGroup: row.bloodGroup || "",
+                totalPaidTK: row.totalPaidTK || "",
                 address: row.address || "",
                 courseStatus: (row.courseStatus || "") as StudentBatchInfo['courseStatus'],
                 currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
@@ -407,6 +409,7 @@ export default function AllBatchInfoPage() {
                         educationalDegree: row.educationalDegree || "",
                         category: (row.category || "") as StudentBatchInfo['category'],
                         bloodGroup: row.bloodGroup || "",
+                        totalPaidTK: row.totalPaidTK || "",
                         address: row.address || "",
                         courseStatus: (updatedStatus || "") as StudentBatchInfo['courseStatus'],
                         currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
@@ -466,7 +469,7 @@ export default function AllBatchInfoPage() {
 
             // 2. Student List Header
             sheetData.push(["Student List"]);
-            sheetData.push(["Batch", "Roll", "Name", "Phone", "Date of Birth", "Educational Degree", "Category", "Blood Group", "Address", "Status", "Currently", "Company Name", "Business Name", "Salary"]);
+            sheetData.push(["Batch", "Roll", "Name", "Phone", "Date of Birth", "Educational Degree", "Category", "Blood Group", "Total Paid TK", "Address", "Status", "Currently", "Company Name", "Business Name", "Salary"]);
 
             // 3. Student Data
             currentExportStudents.forEach(s => {
@@ -479,6 +482,7 @@ export default function AllBatchInfoPage() {
                     s.educationalDegree || "-",
                     s.category || "-",
                     s.bloodGroup || "-",
+                    s.totalPaidTK || "-",
                     s.address || "-",
                     s.courseStatus || "-",
                     s.currentlyDoing === 'Nothing' ? 'Studying Further' : (s.currentlyDoing || "-"),
@@ -801,6 +805,7 @@ export default function AllBatchInfoPage() {
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[150px]">Educational Degree</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Category</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[100px]">Blood Group</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[100px]">Total Paid TK</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[200px]">Address</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Status</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Currently</th>
@@ -837,6 +842,9 @@ export default function AllBatchInfoPage() {
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 text-center">
                                                 <span className="font-bold text-red-600">{student.bloodGroup || "-"}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 text-center">
+                                                <span className="font-semibold text-emerald-600">{student.totalPaidTK || "-"}</span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 max-w-[200px]">
                                                 <div className="flex items-center gap-1.5">
@@ -1090,6 +1098,7 @@ export default function AllBatchInfoPage() {
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">Educational Degree</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Category</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Blood Group</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Total Paid TK</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[150px]">Address</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[120px]">Course Status</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[120px]">Currently Doing</th>

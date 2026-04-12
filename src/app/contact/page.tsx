@@ -75,7 +75,7 @@ export default function ContactPage() {
                 ctaText="Enroll"
             />
 
-            <main className="min-h-screen bg-white">
+            <main className="min-h-screen bg-slate-50">
                 {/* 2. Contact Information Section */}
                 <section className="w-full bg-[#f9fafb] pt-4 pb-8 md:pt-6 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">

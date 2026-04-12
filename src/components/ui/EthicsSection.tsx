@@ -12,7 +12,7 @@ const coreValues = [
 
 export default function EthicsSection() {
     return (
-        <section className="relative w-full py-20 md:py-28 bg-white overflow-hidden border-t border-gray-100">
+        <section className="relative w-full bg-white overflow-hidden border-t border-gray-100 py-[15px]">
             {/* Background Ambience */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[100px]" />
@@ -33,7 +33,7 @@ export default function EthicsSection() {
                                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                                     Ethics & Responsibility
                                 </h2>
-                                <p className="text-lg text-gray-600 leading-relaxed font-medium">
+                                <p className="text-lg text-transparent bg-clip-text bg-gradient-to-r from-[#374151] to-[#059669] leading-relaxed font-medium">
                                     At its core, this course is grounded in ethical responsibility and Islamic business values.
                                 </p>
                             </div>

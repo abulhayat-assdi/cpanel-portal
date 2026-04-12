@@ -46,7 +46,7 @@ export default async function BlogPage() {
                 navLinks={navLinks}
             />
 
-            <main className="min-h-screen bg-white">
+            <main className="min-h-screen bg-slate-50">
                 {/* 1. Page Header Section */}
                 <section className="w-full bg-white pt-6 pb-8 md:pt-8 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">

@@ -1,6 +1,6 @@
 export default function Loading() {
     return (
-        <div className="fixed inset-0 min-h-screen bg-white flex flex-col items-center justify-center z-[9999]">
+        <div className="fixed inset-0 min-h-screen bg-slate-50 flex flex-col items-center justify-center z-[9999]">
             <div className="relative flex flex-col items-center">
                 {/* Elegant pulsing spinner/circle sequence */}
                 <div className="w-16 h-16 border-4 border-gray-100 border-t-[#059669] rounded-full animate-spin shadow-sm"></div>

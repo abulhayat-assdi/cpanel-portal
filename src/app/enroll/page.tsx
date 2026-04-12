@@ -115,7 +115,7 @@ export default function EnrollPage() {
                 ctaText="Enroll"
             />
 
-            <main className="min-h-screen bg-white">
+            <main className="min-h-screen bg-slate-50">
                 <section className="bg-gradient-to-r from-[#059669] to-[#10b981] py-16 md:py-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center text-white">
                         <h1 className="text-3xl md:text-5xl font-bold mb-6">Join Our Next Batch</h1>

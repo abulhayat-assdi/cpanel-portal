@@ -24,7 +24,7 @@ export default function LearningOutcomes({
         <section
             ref={sectionRef}
             className={cn(
-                "w-full bg-white py-24 md:py-32 overflow-hidden",
+                "w-full bg-white py-[15px] md:py-[15px] overflow-hidden",
                 className
             )}
         >
@@ -38,7 +38,7 @@ export default function LearningOutcomes({
                                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight leading-tight">
                                     {title}
                                 </h2>
-                                <p className="text-lg md:text-xl text-gray-500 leading-relaxed font-medium">
+                                <p className="text-lg md:text-xl text-transparent bg-clip-text bg-gradient-to-r from-[#374151] to-[#059669] leading-relaxed font-medium">
                                     {subtitle}
                                 </p>
                             </div>

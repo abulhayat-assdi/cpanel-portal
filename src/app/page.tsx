@@ -73,7 +73,7 @@ export default function HomePage() {
                 studentLoginHref="/student-login"
                 transparent={true}
             />
-            <main className="min-h-screen bg-white">
+            <main className="min-h-screen bg-slate-50">
                 <HeroSection
                     primaryButtonHref="/about"
                     secondaryButtonHref="/modules"

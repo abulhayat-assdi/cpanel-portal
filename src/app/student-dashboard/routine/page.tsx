@@ -157,8 +157,8 @@ export default function StudentRoutinePage() {
                                         <div className="absolute -bottom-6 -left-3 w-16 h-16 bg-black/10 rounded-full"></div>
                                         <div className="relative z-10 flex items-center justify-between">
                                             <div>
-                                                <h2 className="text-xl font-black text-white tracking-tight">{day}</h2>
-                                                <p className="text-white/70 text-xs font-semibold mt-0.5 uppercase tracking-wider">
+                                                <h2 className="text-xl font-black text-white tracking-tight no-gradient">{day}</h2>
+                                                <p className="text-white/70 text-xs font-semibold mt-0.5 uppercase tracking-wider no-gradient">
                                                     {classes.length} {classes.length === 1 ? "class" : "classes"}
                                                 </p>
                                             </div>

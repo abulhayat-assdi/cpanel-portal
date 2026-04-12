@@ -12,6 +12,7 @@ export interface StudentBatchInfo {
     educationalDegree?: string;
     category?: "Alim" | "General" | "";
     bloodGroup?: string;
+    totalPaidTK?: string | number;
     courseStatus: "Completed" | "Running" | "Incomplete" | "Expelled" | "";
     currentlyDoing: "Job" | "Business" | "Studying Further" | "Nothing" | "";
     companyName: string;

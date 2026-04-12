@@ -44,7 +44,7 @@ const whyReasons = [
 
 export default function WhyThisCourseSection() {
     return (
-        <section className="relative w-full py-20 md:py-28 bg-white overflow-hidden border-t border-gray-100">
+        <section className="relative w-full bg-white overflow-hidden border-t border-gray-100 py-[15px]">
             {/* Background Ambience (Subtle) */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[100px]" />

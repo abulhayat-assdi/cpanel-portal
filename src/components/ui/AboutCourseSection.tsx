@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function AboutCourseSection() {
     return (
-        <section className="relative w-full overflow-hidden bg-gradient-to-b from-white to-slate-50 pt-10 pb-20 lg:pt-14 lg:pb-28">
+        <section className="relative w-full overflow-hidden bg-gradient-to-b from-white to-slate-50 py-[15px]">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
                 <Image

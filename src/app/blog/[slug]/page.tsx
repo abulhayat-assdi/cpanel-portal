@@ -100,7 +100,7 @@ export default async function BlogPostPage({ params }: Props) {
                 ctaText="Enroll"
             />
 
-            <main className="min-h-screen bg-white">
+            <main className="min-h-screen bg-slate-50">
                 {/* 1. Article Header Section */}
                 <section className="w-full bg-white pt-16 md:pt-20 pb-8">
                     <div className="max-w-3xl mx-auto px-6 lg:px-8">

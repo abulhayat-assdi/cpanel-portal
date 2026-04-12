@@ -5,7 +5,7 @@ import Reveal from "./Reveal";
 
 export default function AboutCTASection() {
     return (
-        <section className="relative w-full py-20 md:py-28 bg-gradient-to-b from-slate-50 to-white overflow-hidden border-t border-gray-100">
+        <section className="relative w-full bg-gradient-to-b from-slate-50 to-white overflow-hidden border-t border-gray-100 py-[15px]">
             <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 text-center">
                 <Reveal width="100%">
                     <p className="text-xl md:text-2xl text-gray-900 font-semibold mb-8 max-w-3xl mx-auto leading-relaxed">

@@ -52,7 +52,7 @@ export default function CourseOverview({
     return (
         <section
             className={cn(
-                "w-full bg-white py-16 md:py-24",
+                "w-full bg-white py-[15px] md:py-[15px]",
                 className
             )}
         >
@@ -62,7 +62,7 @@ export default function CourseOverview({
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#1f2937] mb-4">
                         {title}
                     </h2>
-                    <p className="text-base md:text-lg text-[#6b7280] leading-relaxed">
+                    <p className="text-base md:text-lg text-transparent bg-clip-text bg-gradient-to-r from-[#374151] to-[#059669] leading-relaxed font-medium">
                         {subtitle}
                     </p>
                 </div>
