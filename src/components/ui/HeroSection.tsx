@@ -92,14 +92,14 @@ export default function HeroSection({
 
                 {/* Heading */}
                 <Reveal delay={400}>
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
+                    <h1 className="no-gradient text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
                         {heading}
                     </h1>
                 </Reveal>
 
                 {/* Tagline */}
                 <Reveal delay={600}>
-                    <p className="text-xl md:text-2xl font-semibold text-white tracking-wide mb-10">
+                    <p className="no-gradient text-xl md:text-2xl font-semibold text-white tracking-wide mb-10">
                         {subheading}
                     </p>
                 </Reveal>

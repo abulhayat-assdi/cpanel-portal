@@ -1,4 +1,4 @@
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, Timestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface ClassRoutine {
@@ -54,6 +54,32 @@ export const addClassRoutine = async (routine: Omit<ClassRoutine, "id" | "create
         return docRef.id;
     } catch (error) {
         console.error("Error adding class routine:", error);
+        throw error;
+    }
+};
+
+/**
+ * Update an existing class routine
+ */
+export const updateClassRoutine = async (id: string, updates: Partial<Omit<ClassRoutine, "id" | "createdAt">>): Promise<void> => {
+    try {
+        const routineRef = doc(db, "class_routines", id);
+        await updateDoc(routineRef, updates);
+    } catch (error) {
+        console.error("Error updating class routine:", error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a class routine
+ */
+export const deleteClassRoutine = async (id: string): Promise<void> => {
+    try {
+        const routineRef = doc(db, "class_routines", id);
+        await deleteDoc(routineRef);
+    } catch (error) {
+        console.error("Error deleting class routine:", error);
         throw error;
     }
 };

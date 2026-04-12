@@ -166,7 +166,7 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'createdAt'>): Prom
         return {
             id: docRef.id,
             ...post,
-            createdAt: new Date().toISOString(), // Optimistic return
+            createdAt: new Date(), // Optimistic return
         } as BlogPost;
     } catch (error) {
         console.error("Error creating post:", error);

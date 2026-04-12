@@ -112,15 +112,22 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
         }
     };
 
-    const formatDate = (dateString: string) => {
-        if (!dateString) return "Just now";
+    const formatDate = (dateValue: any) => {
+        if (!dateValue) return "Just now";
         try {
-            const date = new Date(dateString);
+            let dateObj;
+            if (typeof dateValue.toDate === 'function') {
+                dateObj = dateValue.toDate();
+            } else if (dateValue instanceof Date) {
+                dateObj = dateValue;
+            } else {
+                dateObj = new Date(dateValue);
+            }
             return new Intl.DateTimeFormat("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric"
-            }).format(date);
+            }).format(dateObj);
         } catch (e) {
             return "Just now";
         }

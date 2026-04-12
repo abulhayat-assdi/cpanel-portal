@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { firestoreDocId, newLoginEmail, isAdmin } = body;
+        const { firestoreDocId, newLoginEmail, isAdmin, teacherId } = body;
 
         if (!firestoreDocId) {
             return NextResponse.json({ error: "Missing firestoreDocId" }, { status: 400 });
@@ -104,6 +104,11 @@ export async function POST(req: NextRequest) {
                 teacher: isAdmin !== true,
             });
             await adminDb.collection("users").doc(authUid).update({ role: newRole });
+        }
+
+        // 7. Update teacherId to assure they are tightly linked
+        if (authUid && teacherId) {
+             await adminDb.collection("users").doc(authUid).update({ teacherId });
         }
 
         return NextResponse.json({ success: true, message: "Teacher updated successfully." });

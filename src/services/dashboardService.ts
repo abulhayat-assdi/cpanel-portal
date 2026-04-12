@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, FieldValue, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, Timestamp, FieldValue } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
 
@@ -222,3 +222,63 @@ export const getPendingClassesThisMonth = (classes: Class[]): number => {
             classDate.getFullYear() === currentYear;
     }).length;
 };
+
+/**
+ * Get monthly class statistics from class_schedules (all batches, all teachers).
+ * Returns: total scheduled this month, completed, and pending counts.
+ */
+export const getMonthlyClassStats = async (): Promise<{
+    total: number;
+    completed: number;
+    pending: number;
+}> => {
+    try {
+        const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const monthStart = `${year}-${month}-01`;
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+        const monthEnd = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+
+        const normalizeDate = (d: string) => {
+            if (!d) return "";
+            if (d.match(/^\d{4}-\d{2}-\d{2}$/)) return d;
+            const parts = d.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (parts) return `${parts[3]}-${parts[2].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+            return d;
+        };
+
+        const isThisMonth = (rawDate: string) => {
+            const nd = normalizeDate(rawDate || "");
+            return nd >= monthStart && nd <= monthEnd;
+        };
+
+        // 1. Fetch class_schedules for this month (total planned classes)
+        const schedulesSnap = await getDocs(collection(db, "class_schedules"));
+        const scheduledThisMonth = schedulesSnap.docs.filter(d =>
+            isThisMonth(d.data().date as string)
+        ).length;
+
+        // 2. Fetch all classes collection records for this month
+        const classesSnap = await getDocs(collection(db, "classes"));
+        const allClassDocs = classesSnap.docs.filter(d =>
+            isThisMonth(d.data().date as string)
+        );
+
+        const completedThisMonth = allClassDocs.filter(d =>
+            d.data().status === "COMPLETED"
+        ).length;
+
+        // Total = scheduled classes + any extra records in classes not already covered
+        // Use max to avoid double-counting: if schedules=0 but classes=5, show 5
+        const total = Math.max(scheduledThisMonth, allClassDocs.length);
+
+        const pending = Math.max(0, total - completedThisMonth);
+
+        return { total, completed: completedThisMonth, pending };
+    } catch (error) {
+        console.error("Error fetching monthly class stats:", error);
+        return { total: 0, completed: 0, pending: 0 };
+    }
+};
+

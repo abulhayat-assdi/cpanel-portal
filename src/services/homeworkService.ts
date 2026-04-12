@@ -393,3 +393,16 @@ export const deleteHomeworkAssignment = async (id: string): Promise<void> => {
         throw error;
     }
 };
+
+export const updateHomeworkAssignment = async (
+    id: string,
+    updates: Partial<Pick<HomeworkAssignment, "title" | "batchName" | "deadlineDate">>
+): Promise<void> => {
+    try {
+        const { updateDoc } = await import("firebase/firestore");
+        await updateDoc(doc(db, HOMEWORK_ASSIGNMENTS_COLLECTION, id), updates);
+    } catch (error) {
+        console.error("Error updating assignment:", error);
+        throw error;
+    }
+};

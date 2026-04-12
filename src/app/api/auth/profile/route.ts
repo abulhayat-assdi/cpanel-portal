@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
                         if (profileData.teacherId !== teacherMatch.teacherId) {
                             await adminDb.collection(COLLECTIONS.USERS).doc(uid).update({
                                 teacherId: teacherMatch.teacherId
-                            }).catch(() => {}); // silently ignore if update fails
+                            }).catch(() => { }); // silently ignore if update fails
                         }
                     }
                     if (!profile.profileImageUrl && teacherMatch.profileImageUrl) {

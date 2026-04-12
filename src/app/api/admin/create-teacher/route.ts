@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { loginEmail, displayEmail, password, name, phone, isAdmin, order } = body;
+        const { teacherId, loginEmail, displayEmail, password, name, phone, isAdmin, order } = body;
 
         if (!loginEmail || !password || !name) {
             return NextResponse.json(
@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
                 email: loginEmail,
                 displayName: name,
                 role,
+                teacherId: teacherId || null,
                 order: Number(order) || 0,
                 createdAt: new Date(),
             });

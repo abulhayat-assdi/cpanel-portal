@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, Timestamp, where, writeBatch } from "firebase/firestore";
+import { collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, Timestamp, where, writeBatch, QueryDocumentSnapshot } from "firebase/firestore";
 
 export interface StudentBatchInfo {
     id: string; // usually roll or a generated ID

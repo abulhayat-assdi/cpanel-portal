@@ -1,6 +1,6 @@
 "use client";
 
-import { Reveal } from "./Reveal";
+import Reveal from "./Reveal";
 import Image from "next/image";
 
 export default function AboutCourseSection() {

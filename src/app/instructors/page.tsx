@@ -42,7 +42,7 @@ async function getAdminStatus() {
     }
 }
 
-async function getTeachers() {
+async function getTeachers(): Promise<Teacher[]> {
     try {
         const { adminDb } = getAdminServices();
         const snapshot = await adminDb
@@ -59,7 +59,7 @@ async function getTeachers() {
             return {
                 id: doc.id,
                 ...data,
-            };
+            } as Teacher;
         });
     } catch (error) {
         console.error("Error fetching teachers with ordering:", error);
@@ -72,7 +72,7 @@ async function getTeachers() {
                 if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
                     data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
                 }
-                return { id: doc.id, ...data };
+                return { id: doc.id, ...data } as Teacher;
             });
         } catch {
             return [];
@@ -153,7 +153,6 @@ export default async function InstructorsPage() {
                             {instructors.map((instructor: Teacher, index: number) => (
                                 <InstructorCard
                                     key={instructor.id}
-                                    index={index}
                                     name={instructor.name}
                                     role={instructor.designation}
                                     description={instructor.about}

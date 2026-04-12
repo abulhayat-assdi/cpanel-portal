@@ -12,6 +12,7 @@ import {
     getTodayClassesCount,
     getCompletedClassesThisMonth,
     getPendingClassesThisMonth,
+    getMonthlyClassStats,
     addNotice,
     updateNotice,
     deleteNotice,
@@ -32,6 +33,9 @@ export default function DashboardPage() {
     const [notices, setNotices] = useState<Notice[]>([]);
     const [studentNotices, setStudentNotices] = useState<StudentNotice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [monthlyStats, setMonthlyStats] = useState<{ total: number; completed: number; pending: number }>({
+        total: 0, completed: 0, pending: 0
+    });
 
     // Add/Edit Notice State
     const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
@@ -66,14 +70,16 @@ export default function DashboardPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [classesData, noticesData, studentNoticesData] = await Promise.all([
+                const [classesData, noticesData, studentNoticesData, stats] = await Promise.all([
                     getAllClasses(),
                     getAllNotices(),
-                    getAllStudentNotices()
+                    getAllStudentNotices(),
+                    getMonthlyClassStats()
                 ]);
                 setClasses(classesData);
                 setNotices(noticesData);
                 setStudentNotices(studentNoticesData);
+                setMonthlyStats(stats);
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -267,11 +273,11 @@ export default function DashboardPage() {
 
                 <CardBody className="py-16 relative z-10">
                     <div className="text-white text-center">
-                        <p className="text-sm font-normal mb-2 opacity-90">Assalamu Alaikum,</p>
-                        <h1 className="text-5xl font-bold mb-3">
+                        <p className="no-gradient text-sm font-normal mb-2 opacity-90">Assalamu Alaikum,</p>
+                        <h1 className="no-gradient text-white text-5xl font-bold mb-3">
                             {userProfile?.displayName || "User"}
                         </h1>
-                        <p className="text-white/90 mb-8 text-lg font-normal max-w-2xl mx-auto">
+                        <p className="no-gradient text-white/90 mb-8 text-lg font-normal max-w-2xl mx-auto">
                             Comprehensive Portal for the Art of Sales & Marketing Course
                         </p>
                         <Clock />
@@ -314,9 +320,9 @@ export default function DashboardPage() {
                                 📅
                             </div>
                             <div>
-                                <p className="text-sm text-[#6b7280]">{"Today's Classes"}</p>
+                                <p className="text-sm text-[#6b7280]">Total Classes (This Month)</p>
                                 <p className="text-2xl font-bold text-[#1f2937]">
-                                    {loading ? "..." : todayClasses}
+                                    {loading ? "..." : monthlyStats.total}
                                 </p>
                             </div>
                         </div>
@@ -332,7 +338,7 @@ export default function DashboardPage() {
                             <div>
                                 <p className="text-sm text-[#6b7280]">Completed Classes (This Month)</p>
                                 <p className="text-2xl font-bold text-[#1f2937]">
-                                    {loading ? "..." : completedThisMonth}
+                                    {loading ? "..." : monthlyStats.completed}
                                 </p>
                             </div>
                         </div>
@@ -348,7 +354,7 @@ export default function DashboardPage() {
                             <div>
                                 <p className="text-sm text-[#6b7280]">Pending Classes (This Month)</p>
                                 <p className="text-2xl font-bold text-[#1f2937]">
-                                    {loading ? "..." : pendingThisMonth}
+                                    {loading ? "..." : monthlyStats.pending}
                                 </p>
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
 export async function POST(req: NextRequest) {
@@ -42,6 +42,44 @@ export async function POST(req: NextRequest) {
     } catch (error) {
     console.error("Error uploading file:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to upload file";
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { url } = await req.json();
+    if (!url) {
+      return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    }
+
+    // Convert public URL like `/documents/routines/xxx.pdf` to actual local path
+    const cleanUrl = url.startsWith("/") ? url.slice(1) : url;
+    const filePath = path.join(process.cwd(), "public", cleanUrl);
+
+    // Prevent directory traversal attacks
+    const publicDir = path.join(process.cwd(), "public");
+    if (!filePath.startsWith(publicDir)) {
+      return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
+    }
+
+    try {
+      await unlink(filePath);
+    } catch (e: any) {
+      // If file is already gone, that's fine
+      if (e.code !== "ENOENT") {
+        throw e;
+      }
+      console.warn("File to delete not found, ignoring:", filePath);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to delete file";
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

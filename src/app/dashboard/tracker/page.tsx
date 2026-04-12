@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import "./tracker.css";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function getTodayDateString() {
     const d = new Date();
@@ -23,10 +25,12 @@ export default function TrackerDashboardPage() {
 
     // ── Dashboard filter state ───────────────────────────────
     const [dashDate, setDashDate] = useState(() => getTodayDateString());
-    const [dashBatch, setDashBatch] = useState("Batch 08");
+    const [dashBatch, setDashBatch] = useState("");
     const [dashLoading, setDashLoading] = useState(false);
     const [dashReports, setDashReports] = useState<any[]>([]);
     const [dashEmptyMessage, setDashEmptyMessage] = useState("");
+    const [availableBatches, setAvailableBatches] = useState<string[]>([]);
+    const [batchesLoading, setBatchesLoading] = useState(true);
 
     // ── Share link ───────────────────────────────────────────
     const [copied, setCopied] = useState(false);
@@ -46,30 +50,72 @@ export default function TrackerDashboardPage() {
     const [exportPeriod, setExportPeriod] = useState("weekly");
     const [exportFrom, setExportFrom] = useState("");
     const [exportTo, setExportTo] = useState("");
-    const [exportBatch, setExportBatch] = useState("Batch 08");
+    const [exportBatch, setExportBatch] = useState("");
     const [isExporting, setIsExporting] = useState(false);
 
-    // ── Load dashboard data ──────────────────────────────────
+    // ── Load unique batches from Firestore ────────────────────
+    useEffect(() => {
+        const loadBatches = async () => {
+            setBatchesLoading(true);
+            try {
+                const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
+                const names = new Set<string>();
+                snapshot.docs.forEach(doc => {
+                    const bn = doc.data().batchName;
+                    if (bn) {
+                        // Normalize: replace underscores with spaces
+                        names.add(String(bn).replace(/_/g, " "));
+                    }
+                });
+                const sorted = Array.from(names).sort();
+                setAvailableBatches(sorted);
+                if (sorted.length > 0) {
+                    setDashBatch(sorted[0]);
+                    setExportBatch(sorted[0]);
+                }
+            } catch (err) {
+                console.error("Failed to load batches:", err);
+            } finally {
+                setBatchesLoading(false);
+            }
+        };
+        loadBatches();
+    }, []);
+
+    // ── Load dashboard data (direct Firestore) ────────────────
     const loadDashboardData = async (date: string, batch: string) => {
         if (!date || !batch) return;
         setDashLoading(true);
         setDashEmptyMessage("");
         setDashReports([]);
         try {
-            const res = await fetch("/api/tracker", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "getDashboardData", payload: { date, batch } }),
-            });
-            const result = await res.json();
-            if (result.success) {
-                if (result.reports && result.reports.length > 0) {
-                    setDashReports(result.reports);
-                } else {
-                    setDashEmptyMessage(`"${batch}" ব্যাচে ${date} তারিখে কোনো রিপোর্ট জমা হয়নি।`);
-                }
+            // Fetch ALL reports (no filter) to handle batch name inconsistencies
+            // e.g., "Batch_08" vs "Batch 08" stored by different submissions
+            const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
+            const normalizedBatch = batch.replace(/_/g, " ").trim().toLowerCase();
+
+            const reports = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as any))
+                .filter((d: any) => {
+                    const docBatch = String(d.batchName || "").replace(/_/g, " ").trim().toLowerCase();
+                    return d.date === date && docBatch === normalizedBatch;
+                })
+                .map((d: any) => ({
+                    id: d.id,
+                    captain: d.studentName,
+                    score: d.score,
+                    items: (d.tasks || []).map((t: any, idx: number) => ({
+                        number: idx + 1,
+                        label: t.question,
+                        status: t.status,
+                        reason: t.reason
+                    }))
+                }));
+
+            if (reports.length > 0) {
+                setDashReports(reports);
             } else {
-                setDashEmptyMessage(`⚠️ ${result.message || "ডেটা লোড করতে সমস্যা হয়েছে।"}`);
+                setDashEmptyMessage(`"${batch}" ব্যাচে ${date} তারিখে কোনো রিপোর্ট জমা হয়নি।`);
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
@@ -80,11 +126,11 @@ export default function TrackerDashboardPage() {
     };
 
     useEffect(() => {
-        loadDashboardData(dashDate, dashBatch);
+        if (dashBatch) loadDashboardData(dashDate, dashBatch);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [dashBatch]);
 
-    // ── Export handler ───────────────────────────────────────
+    // ── Export handler (direct Firestore) ─────────────────────
     const handleExportDownload = async () => {
         if (!exportBatch) { showToast("❗ ব্যাচ সিলেক্ট করুন।", "error"); return; }
 
@@ -108,36 +154,53 @@ export default function TrackerDashboardPage() {
 
         setIsExporting(true);
         try {
-            const res = await fetch("/api/tracker", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "getExportData", payload: { batch: exportBatch, from: fromDateStr, to: toDateStr } }),
-            });
-            const result = await res.json();
-            if (!result.success) { showToast(`❌ ${result.message || "ডেটা আনতে ব্যর্থ।"}`, "error"); return; }
-            if (!result.rows || result.rows.length === 0) { showToast("📭 এই সময়কালে কোনো ডেটা পাওয়া যায়নি।", "error"); return; }
+            const normalizedExportBatch = exportBatch.replace(/_/g, " ").trim().toLowerCase();
+            const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
+
+            const docsInRange = snapshot.docs
+                .map(doc => doc.data() as any)
+                .filter(d => {
+                    const docBatch = String(d.batchName || "").replace(/_/g, " ").trim().toLowerCase();
+                    return d.date >= fromDateStr && d.date <= toDateStr && docBatch === normalizedExportBatch;
+                })
+                .sort((a, b) => a.date.localeCompare(b.date));
+
+            if (docsInRange.length === 0) {
+                showToast("📭 এই সময়কালে কোনো ডেটা পাওয়া যায়নি।", "error");
+                return;
+            }
 
             const xlsx = (window as any).XLSX;
             if (!xlsx) { showToast("❌ Excel library not loaded. Please try again.", "error"); return; }
 
-            const wsData = [result.headers].concat(result.rows);
+            // Build headers from first doc's tasks
+            const firstTasks = docsInRange[0].tasks || [];
+            const headers = ["Date", "Captains Name", "Batch", "Score", ...firstTasks.map((t: any) => t.question)];
+
+            const rows = docsInRange.map(d => {
+                const row = [d.date, d.studentName, d.batchName, d.score];
+                (d.tasks || []).forEach((t: any) => row.push(t.status || ""));
+                return row;
+            });
+
+            const wsData = [headers, ...rows];
             const ws = xlsx.utils.aoa_to_sheet(wsData);
             const wb = xlsx.utils.book_new();
             xlsx.utils.book_append_sheet(wb, ws, exportBatch);
 
-            const colWidths = result.headers.map((h: any, ci: number) => {
+            const colWidths = headers.map((h: any, ci: number) => {
                 let maxLen = String(h).length;
-                result.rows.forEach((r: any) => { const l = String(r[ci] || "").length; if (l > maxLen) maxLen = l; });
+                rows.forEach((r: any) => { const l = String(r[ci] || "").length; if (l > maxLen) maxLen = l; });
                 return { wch: Math.min(maxLen + 2, 40) };
             });
             ws["!cols"] = colWidths;
 
             const fileName = `${exportBatch.replace(/\s+/g, "_")}_${fromDateStr}_to_${toDateStr}.xlsx`;
             xlsx.writeFile(wb, fileName);
-            showToast(`✅ ${result.count} টি রিপোর্ট ডাউনলোড হয়েছে!`, "success");
+            showToast(`✅ ${docsInRange.length} টি রিপোর্ট ডাউনলোড হয়েছে!`, "success");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
-            showToast(`❌ সংযোগ ব্যর্থ: ${errorMessage}`, "error");
+            showToast(`❌ ডাউনলোড ব্যর্থ: ${errorMessage}`, "error");
         } finally {
             setIsExporting(false);
         }
@@ -191,178 +254,192 @@ export default function TrackerDashboardPage() {
                 fontFamily: "'Hind Siliguri', 'Inter', sans-serif"
             }}>
 
-                    {/* Dashboard Header */}
-                    <div className="dashboard-header">
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730a3', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            📊 রিপোর্ট ড্যাশবোর্ড
-                        </h2>
-                    </div>
+                {/* Dashboard Header */}
+                <div className="dashboard-header">
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#3730a3', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        📊 রিপোর্ট ড্যাশবোর্ড
+                    </h2>
+                </div>
 
-                    {/* Date + Batch Filter Bar */}
-                    <div className="date-range-bar" style={{ display: 'block', padding: '18px 20px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                            <div className="date-range-group">
-                                <label htmlFor="dash-date">তারিখ বেছে নিন</label>
-                                <input
-                                    id="dash-date"
-                                    type="date"
-                                    className="date-range-input"
-                                    value={dashDate}
-                                    onChange={(e) => setDashDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="date-range-group">
-                                <label htmlFor="dash-batch">ব্যাচ নাম্বার</label>
-                                <select
-                                    id="dash-batch"
-                                    className="batch-select"
-                                    value={dashBatch}
-                                    onChange={(e) => setDashBatch(e.target.value)}
-                                >
-                                    <option value="" disabled>ব্যাচ সিলেক্ট করুন</option>
-                                    <option value="Batch 08">Batch 08</option>
-                                    <option value="Batch 09">Batch 09</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button
-                            className="date-range-btn"
-                            style={{ width: '100%', justifyContent: 'center', borderRadius: '100px' }}
-                            onClick={() => loadDashboardData(dashDate, dashBatch)}
-                        >
-                            <span className="btn-dot" />
-                            দেখান
-                        </button>
-                    </div>
-
-                    {/* Loading */}
-                    {dashLoading && (
-                        <div style={{ textAlign: "center", padding: "48px" }}>
-                            <span
-                                className="spinner"
-                                style={{ borderColor: "rgba(79,70,229,0.3)", borderTopColor: "#4f46e5", width: "36px", height: "36px", borderWidth: "4px" }}
+                {/* Date + Batch Filter Bar */}
+                <div className="date-range-bar" style={{ display: 'block', padding: '18px 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div className="date-range-group">
+                            <label htmlFor="dash-date">তারিখ বেছে নিন</label>
+                            <input
+                                id="dash-date"
+                                type="date"
+                                className="date-range-input"
+                                value={dashDate}
+                                onChange={(e) => setDashDate(e.target.value)}
                             />
-                            <p style={{ marginTop: "12px", color: "#64748b" }}>ডেটা লোড হচ্ছে...</p>
                         </div>
-                    )}
+                        <div className="date-range-group">
+                            <label htmlFor="dash-batch">ব্যাচ নাম্বার</label>
+                            <select
+                                id="dash-batch"
+                                className="batch-select"
+                                value={dashBatch}
+                                onChange={(e) => setDashBatch(e.target.value)}
+                                disabled={batchesLoading}
+                            >
+                                {batchesLoading ? (
+                                    <option value="">লোড হচ্ছে...</option>
+                                ) : availableBatches.length === 0 ? (
+                                    <option value="">কোনো ডেটা নেই</option>
+                                ) : (
+                                    availableBatches.map(b => (
+                                        <option key={b} value={b}>{b}</option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    </div>
+                    <button
+                        className="date-range-btn"
+                        style={{ width: '100%', justifyContent: 'center', borderRadius: '100px' }}
+                        onClick={() => loadDashboardData(dashDate, dashBatch)}
+                    >
+                        <span className="btn-dot" />
+                        দেখান
+                    </button>
+                </div>
 
-                    {/* Reports */}
-                    {!dashLoading && (
-                        <div id="dashboard-content">
-                            {dashEmptyMessage ? (
-                                <div className="empty-state">
-                                    <div className="empty-icon">📭</div>
-                                    <p>{dashEmptyMessage}</p>
-                                </div>
-                            ) : (
-                                <div id="report-list">
-                                    {dashReports.map((report, rIdx) => (
-                                        <div key={rIdx} className="report-card">
-                                            <div className="report-card-header">
-                                                <span className="report-captain">👤 {report.captain}</span>
-                                                <div className="report-card-meta">
-                                                    <span className="report-batch-badge">{dashBatch}</span>
-                                                    <span className="report-date-badge">{dashDate}</span>
-                                                </div>
-                                            </div>
-                                            <div className="report-items-list">
-                                                {report.items.map((item: any, iIdx: number) => {
-                                                    const isYes = item.status === "হ্যাঁ";
-                                                    const isNo  = item.status === "না";
-                                                    return (
-                                                        <div key={iIdx} className={`report-item${isNo ? " report-item-no" : ""}`}>
-                                                            <span className="report-item-num">{item.number}</span>
-                                                            <div className="report-item-body">
-                                                                <div className="report-item-label">{item.label}</div>
-                                                                {isNo && item.reason && (
-                                                                    <div className="report-reason">💬 {item.reason}</div>
-                                                                )}
-                                                            </div>
-                                                            <div className="report-item-status">
-                                                                {isYes && <span className="badge-yes">✓ হ্যাঁ</span>}
-                                                                {isNo  && <span className="badge-no">X না</span>}
-                                                                {!isYes && !isNo && <span className="badge-na">—</span>}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                {/* Loading */}
+                {dashLoading && (
+                    <div style={{ textAlign: "center", padding: "48px" }}>
+                        <span
+                            className="spinner"
+                            style={{ borderColor: "rgba(79,70,229,0.3)", borderTopColor: "#4f46e5", width: "36px", height: "36px", borderWidth: "4px" }}
+                        />
+                        <p style={{ marginTop: "12px", color: "#64748b" }}>ডেটা লোড হচ্ছে...</p>
+                    </div>
+                )}
+
+                {/* Reports */}
+                {!dashLoading && (
+                    <div id="dashboard-content">
+                        {dashEmptyMessage ? (
+                            <div className="empty-state">
+                                <div className="empty-icon">📭</div>
+                                <p>{dashEmptyMessage}</p>
+                            </div>
+                        ) : (
+                            <div id="report-list">
+                                {dashReports.map((report, rIdx) => (
+                                    <div key={rIdx} className="report-card">
+                                        <div className="report-card-header">
+                                            <span className="report-captain">👤 {report.captain}</span>
+                                            <div className="report-card-meta">
+                                                <span className="report-batch-badge">{dashBatch}</span>
+                                                <span className="report-date-badge">{dashDate}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Export Section */}
-                    <div className="export-section" style={{ padding: '22px 22px', marginTop: '20px' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#3730a3', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>📥 রিপোর্ট ডাউনলোড</h3>
-                        <div className="export-controls">
-                            <div className="export-field">
-                                <label htmlFor="export-period">সময়কাল</label>
-                                <select
-                                    id="export-period"
-                                    className="batch-select"
-                                    value={exportPeriod}
-                                    onChange={(e) => setExportPeriod(e.target.value)}
-                                >
-                                    <option value="weekly">সাপ্তাহিক (গত ৭ দিন)</option>
-                                    <option value="monthly">মাসিক (গত ৩০ দিন)</option>
-                                    <option value="custom">কাস্টম তারিখ</option>
-                                </select>
-                            </div>
-
-                            {exportPeriod === "custom" && (
-                                <div className="custom-dates-row">
-                                    <div className="export-field">
-                                        <label htmlFor="export-from">শুরুর তারিখ</label>
-                                        <input
-                                            id="export-from"
-                                            type="date"
-                                            className="date-range-input"
-                                            value={exportFrom}
-                                            onChange={(e) => setExportFrom(e.target.value)}
-                                        />
+                                        <div className="report-items-list">
+                                            {report.items.map((item: any, iIdx: number) => {
+                                                const isYes = item.status === "হ্যাঁ";
+                                                const isNo = item.status === "না";
+                                                return (
+                                                    <div key={iIdx} className={`report-item${isNo ? " report-item-no" : ""}`}>
+                                                        <span className="report-item-num">{item.number}</span>
+                                                        <div className="report-item-body">
+                                                            <div className="report-item-label">{item.label}</div>
+                                                            {isNo && item.reason && (
+                                                                <div className="report-reason">💬 {item.reason}</div>
+                                                            )}
+                                                        </div>
+                                                        <div className="report-item-status">
+                                                            {isYes && <span className="badge-yes">✓ হ্যাঁ</span>}
+                                                            {isNo && <span className="badge-no">X না</span>}
+                                                            {!isYes && !isNo && <span className="badge-na">—</span>}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="export-field">
-                                        <label htmlFor="export-to">শেষ তারিখ</label>
-                                        <input
-                                            id="export-to"
-                                            type="date"
-                                            className="date-range-input"
-                                            value={exportTo}
-                                            onChange={(e) => setExportTo(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="export-field">
-                                <label htmlFor="export-batch">ব্যাচ নাম্বার</label>
-                                <select
-                                    id="export-batch"
-                                    className="batch-select"
-                                    value={exportBatch}
-                                    onChange={(e) => setExportBatch(e.target.value)}
-                                >
-                                    <option value="" disabled>ব্যাচ সিলেক্ট করুন</option>
-                                    <option value="Batch 08">Batch 08</option>
-                                    <option value="Batch 09">Batch 09</option>
-                                </select>
+                                ))}
                             </div>
-
-                            <button className="export-btn" onClick={handleExportDownload} disabled={isExporting}>
-                                {isExporting ? (
-                                    <>
-                                        <span className="spinner" style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }} />
-                                        ডাউনলোড হচ্ছে...
-                                    </>
-                                ) : (
-                                    "📥 এক্সেল ডাউনলোড"
-                                )}
-                            </button>
-                        </div>
+                        )}
                     </div>
+                )}
+
+                {/* Export Section */}
+                <div className="export-section" style={{ padding: '22px 22px', marginTop: '20px' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#3730a3', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>📥 রিপোর্ট ডাউনলোড</h3>
+                    <div className="export-controls">
+                        <div className="export-field">
+                            <label htmlFor="export-period">সময়কাল</label>
+                            <select
+                                id="export-period"
+                                className="batch-select"
+                                value={exportPeriod}
+                                onChange={(e) => setExportPeriod(e.target.value)}
+                            >
+                                <option value="weekly">সাপ্তাহিক (গত ৭ দিন)</option>
+                                <option value="monthly">মাসিক (গত ৩০ দিন)</option>
+                                <option value="custom">কাস্টম তারিখ</option>
+                            </select>
+                        </div>
+
+                        {exportPeriod === "custom" && (
+                            <div className="custom-dates-row">
+                                <div className="export-field">
+                                    <label htmlFor="export-from">শুরুর তারিখ</label>
+                                    <input
+                                        id="export-from"
+                                        type="date"
+                                        className="date-range-input"
+                                        value={exportFrom}
+                                        onChange={(e) => setExportFrom(e.target.value)}
+                                    />
+                                </div>
+                                <div className="export-field">
+                                    <label htmlFor="export-to">শেষ তারিখ</label>
+                                    <input
+                                        id="export-to"
+                                        type="date"
+                                        className="date-range-input"
+                                        value={exportTo}
+                                        onChange={(e) => setExportTo(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="export-field">
+                            <label htmlFor="export-batch">ব্যাচ নাম্বার</label>
+                            <select
+                                id="export-batch"
+                                className="batch-select"
+                                value={exportBatch}
+                                onChange={(e) => setExportBatch(e.target.value)}
+                                disabled={batchesLoading}
+                            >
+                                {batchesLoading ? (
+                                    <option value="">লোড হচ্ছে...</option>
+                                ) : availableBatches.length === 0 ? (
+                                    <option value="">কোনো ডেটা নেই</option>
+                                ) : (
+                                    availableBatches.map(b => (
+                                        <option key={b} value={b}>{b}</option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+
+                        <button className="export-btn" onClick={handleExportDownload} disabled={isExporting}>
+                            {isExporting ? (
+                                <>
+                                    <span className="spinner" style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }} />
+                                    ডাউনলোড হচ্ছে...
+                                </>
+                            ) : (
+                                "📥 এক্সেল ডাউনলোড"
+                            )}
+                        </button>
+                    </div>
+                </div>
 
             </div>
 

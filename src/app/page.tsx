@@ -1,5 +1,5 @@
 import HeroSection from "@/components/ui/HeroSection";
-import LearningOutcomes from "@/components/ui/LearningOutcomes";
+import StudentVideoTestimonials from "@/components/ui/StudentVideoTestimonials";
 import TargetAudience from "@/components/ui/TargetAudience";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
@@ -15,16 +15,7 @@ const navLinks = [
     { label: "Blog", href: "/blog" },
 ];
 
-const learningOutcomes = [
-    "100% সততা বজায় রেখে Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট পিচ ও সেল করা।",
-    "বিজনেসের গ্রোথ বুস্ট করতে রেসপন্সিবিলিটির সাথে AI Tools, Canva এবং Meta Ads মাস্টারি।",
-    "Customer-এর চয়েসকে রেসপেক্ট করে পারসুয়েসিভ কমিউনিকেশন এবং যেকোনো অবজেকশন স্মার্টলি হ্যান্ডেল করা।",
-    "কোনো ফেক প্রমিস বা ক্লিকবেইটের ফাঁদ ছাড়া, একদম জেনুইন ভ্যালু দিয়ে High-Converting Digital Marketing ক্যাম্পেইন ডিজাইন ও এক্সিকিউট করা।",
-    "নিজের ইন্টিগ্রিটি বজায় রেখে একটি প্রফেশনাল CV, পোর্টফোলিও এবং স্ট্রং Personal Brand বিল্ড করা।",
-    "প্রতিদিনের বিজনেস ডিসিশন ও ওয়ার্কপ্লেস বিহেভিয়ারে ইসলামিক এথিক্স (Amanah, Adl, Ikhlas) অ্যাপ্লাই করা।",
-    "বিজনেস ডেটা ম্যানেজ এবং প্রফেশনাল কমিউনিকেশনের জন্য Business Management Tools (MS Office) অ্যাপ্লিকেশনে প্রো-লেভেলের দক্ষতা অর্জন।",
-    "Customer ও Client-কে রিয়েল ভ্যালু প্রোভাইড করে এমন হাইলি এঙ্গেজিং Landing Page এবং Content Marketing স্ট্র্যাটেজি ডেভেলপ করা।",
-];
+
 
 const audiences = [
     {
@@ -94,11 +85,7 @@ export default function HomePage() {
                     audiences={audiences}
                 />
 
-                <LearningOutcomes
-                    title="What You Will Gain"
-                    subtitle="আজকের কম্পিটিটিভ মার্কেটে লিড দেওয়ার জন্য Practical Skills, Digital Expertise এবং একটি স্ট্রং Ethical Mindset।"
-                    outcomes={learningOutcomes}
-                />
+                <StudentVideoTestimonials />
             </main>
             <Footer
                 brandName="Sales & Marketing"

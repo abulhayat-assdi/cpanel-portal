@@ -62,28 +62,47 @@ const getNormalizedDate = (dateStr: string) => {
     try {
         const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
-            return d.toISOString().split('T')[0];
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
         }
     } catch { }
     return dateStr;
 };
 
-// Helper to get current week's start (Saturday) and end (Friday) boundary in YYYY-MM-DD
+// Helper to get current week's start (Friday) and end (Thursday) boundary in YYYY-MM-DD for Dhaka Time
 const getCurrentWeekRange = () => {
-    const today = new Date();
+    const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const diffToSaturday = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
+    // User requested week from Friday to Thursday
+    const diffToFriday = (dayOfWeek + 2) % 7;
     
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - diffToSaturday);
+    startOfWeek.setDate(today.getDate() - diffToFriday);
     
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    return {
-        start: startOfWeek.toISOString().split('T')[0],
-        end: endOfWeek.toISOString().split('T')[0]
+    const format = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     };
+
+    return {
+        start: format(startOfWeek),
+        end: format(endOfWeek)
+    };
+};
+
+const getDhakaTodayDateString = () => {
+    const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 };
 
 /**
@@ -121,7 +140,7 @@ export const getClassesByTeacherId = async (teacherId: string, teacherUid?: stri
         const classes: ClassSchedule[] = [...customSchedules];
 
         // 3. Merge & Process Logic based on Date
-        const today = getNormalizedDate(new Date().toISOString());
+        const today = getDhakaTodayDateString();
         const weekRange = getCurrentWeekRange();
 
         return classes.filter(cls => {
@@ -198,8 +217,7 @@ export const getAllClassesSchedules = async (filterCurrentWeek: boolean = true):
         });
 
         // Compute dynamic status for these as well
-        const d = new Date();
-        const today = getNormalizedDate(d.toISOString());
+        const today = getDhakaTodayDateString();
         const weekRange = getCurrentWeekRange();
 
         return schedules.filter(cls => {
@@ -448,10 +466,36 @@ export const getBatchClassCounts = async () => {
 
         const counts: Record<string, Record<string, number>> = {};
 
+        const mapSubjectAlias = (subj: string) => {
+            if (!subj) return subj;
+            const lower = subj.toLowerCase().trim();
+            if (lower === "ms office") return "Business Management Tools (MS Office)";
+            if (lower === "ai / canva") return "AI + Canva";
+            if (lower === "brand marketing") return "Career Planning & Branding";
+            if (lower === "landing page / content") return "Landing Page & Content Marketing";
+            if (lower === "service") return "Customer Service Excellence";
+            return subj.trim();
+        };
+
+        const mapBatchAlias = (batchStr: string) => {
+            if (!batchStr) return batchStr;
+            const match = batchStr.match(/(\d+)(st|nd|rd|th)?\s*[B|b]atch/i);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                return `Batch_${String(num).padStart(2, '0')}`;
+            }
+            const match2 = batchStr.match(/[B|b]atch\s+(\d+)/i);
+            if (match2) {
+                const num = parseInt(match2[1], 10);
+                return `Batch_${String(num).padStart(2, '0')}`;
+            }
+            return batchStr;
+        };
+
         snapshot.forEach(doc => {
             const data = doc.data();
-            const batch = data.batch;
-            const subject = data.subject;
+            const batch = mapBatchAlias(data.batch);
+            const subject = mapSubjectAlias(data.subject);
 
             if (batch && subject) {
                 if (!counts[batch]) counts[batch] = {};

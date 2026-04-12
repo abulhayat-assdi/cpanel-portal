@@ -14,6 +14,7 @@ const teacherAdminNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
     { href: "/dashboard/teachers", label: "Teacher Directory", icon: "👥", adminOnly: false },
     { href: "/dashboard/schedule", label: "Class Schedule", icon: "📅", adminOnly: false },
+    { href: "/dashboard/manage-routine", label: "Manage Routine", icon: "📆", adminOnly: false },
     { href: "/dashboard/all-batch-info", label: "All Batch Info", icon: "📊", adminOnly: false },
     { href: "/dashboard/resources", label: "Resource Management", icon: "🗂️", adminOnly: false },
     { href: "/dashboard/course-modules", label: "Course Modules", icon: "📚", adminOnly: false },
@@ -28,11 +29,13 @@ const teacherAdminNavItems = [
     { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", adminOnly: true },
     { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", adminOnly: true },
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
+    { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", adminOnly: true },
     { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
 ];
 
 const studentNavItems = [
     { href: "/student-dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
+    { href: "/student-dashboard/routine", label: "Class Routine", icon: "🗓️", adminOnly: false },
     { href: "/student-dashboard/resource", label: "Resource", icon: "📚", adminOnly: false },
     { href: "/student-dashboard/course-outline", label: "Course Outline", icon: "📋", adminOnly: false },
     { href: "/student-dashboard/homework", label: "Homework", icon: "📝", adminOnly: false },

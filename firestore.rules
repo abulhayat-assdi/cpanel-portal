@@ -68,6 +68,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Batch Routines (Weekly Class Routines)
+    match /batch_routines/{docId} {
+      // All students/teachers can view routines
+      allow read: if isAuth();
+      // Only admins can modify routines
+      allow write: if isAdmin();
+    }
+
     // Class Schedules
     match /class_schedules/{scheduleId} {
       allow read: if isAuth();
@@ -267,6 +275,12 @@ service cloud.firestore {
 
     // Success Stories: Video Testimonials
     match /successVideos/{videoId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Homepage Video Testimonials
+    match /homeVideoTestimonials/{videoId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }

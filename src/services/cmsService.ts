@@ -29,22 +29,22 @@ export const getPageContent = async (pageId: string) => {
     }
 
     if (docSnap.exists()) {
-      const data = docSnap.data();
-      const def = defaultContent as Record<string, unknown>;
+      const data = docSnap.data() || {};
+      const def = defaultContent as any;
       
       // Safe merge of sections
       return {
         ...def,
         ...data,
         // Deep merge for specific common sections to avoid nested undefined
-        hero: { ...def.hero, ...data.hero },
-        header: { ...def.header, ...data.header },
-        targetAudience: { ...def.targetAudience, ...data.targetAudience },
-        learningOutcomes: { ...def.learningOutcomes, ...data.learningOutcomes },
-        socialHeader: { ...def.socialHeader, ...data.socialHeader },
-        aboutSection: { ...def.aboutSection, ...data.aboutSection },
-        whySection: { ...def.whySection, ...data.whySection },
-        ctaSection: { ...def.ctaSection, ...data.ctaSection },
+        hero: { ...(def.hero || {}), ...(data.hero || {}) },
+        header: { ...(def.header || {}), ...(data.header || {}) },
+        targetAudience: { ...(def.targetAudience || {}), ...(data.targetAudience || {}) },
+        learningOutcomes: { ...(def.learningOutcomes || {}), ...(data.learningOutcomes || {}) },
+        socialHeader: { ...(def.socialHeader || {}), ...(data.socialHeader || {}) },
+        aboutSection: { ...(def.aboutSection || {}), ...(data.aboutSection || {}) },
+        whySection: { ...(def.whySection || {}), ...(data.whySection || {}) },
+        ctaSection: { ...(def.ctaSection || {}), ...(data.ctaSection || {}) },
       };
     } else {
       return defaultContent;

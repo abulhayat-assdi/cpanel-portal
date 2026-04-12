@@ -3,6 +3,7 @@
 import { getInitials } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { getImageUrl as libGetImageUrl } from "@/lib/getImageUrl";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -47,7 +48,7 @@ function getEnglishDateTime(date: Date): string {
 }
 
 // Helper to get direct image URL from Google Drive link
-const getImageUrl = (url: string) => {
+const getGoogleDriveThumbnailUrl = (url: string) => {
     if (url && url.includes("drive.google.com") && url.includes("/d/")) {
         const id = url.split("/d/")[1].split("/")[0];
         return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
@@ -57,7 +58,7 @@ const getImageUrl = (url: string) => {
 
 export default function Navbar() {
     const [currentDateTime, setCurrentDateTime] = useState({ hijri: '', english: '' });
-    const { userProfile } = useAuth();
+    const { userProfile, user } = useAuth();
 
     useEffect(() => {
         const updateDateTime = () => {
@@ -78,8 +79,21 @@ export default function Navbar() {
     }, []);
 
     // Fallbacks if userProfile is still loading
-    const displayName = userProfile?.displayName || "User";
+    const displayName = userProfile?.displayName || user?.displayName || "User";
     const roleCapitalized = userProfile?.role ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1) : "Loading...";
+    
+    // Static fallback mapping for well-known instructors
+    const TEACHER_IMAGE_MAPPING: Record<string, string> = {
+        "Abul Hayat": "instructors/abul-hayat.jpg",
+        "Golam Kibria": "instructors/golam-kibria.jpeg",
+        "Shaibal Shariar": "instructors/shaibal-shariar.jpg",
+    };
+
+    // Resolve profile image from: Firestore -> Google Auth -> Static Mapping
+    const rawProfileImage = userProfile?.profileImageUrl || user?.photoURL || (displayName && TEACHER_IMAGE_MAPPING[displayName]);
+    
+    // Final image URL (handles local paths like instructors/abul-hayat.jpg and Google Drive)
+    const profileImage = rawProfileImage ? libGetImageUrl(getGoogleDriveThumbnailUrl(rawProfileImage)) : null;
 
     return (
         <nav className="h-16 bg-white border-b border-[#e5e7eb] fixed top-0 left-0 lg:left-64 right-0 z-30">
@@ -109,9 +123,9 @@ export default function Navbar() {
                             <p className="text-xs text-[#6b7280]">{roleCapitalized}</p>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#059669] to-[#10b981] flex items-center justify-center text-white font-bold text-sm overflow-hidden relative border border-gray-100">
-                            {userProfile?.profileImageUrl ? (
+                            {profileImage ? (
                                 <Image
-                                    src={getImageUrl(userProfile.profileImageUrl)}
+                                    src={profileImage}
                                     alt={displayName}
                                     fill
                                     sizes="40px"

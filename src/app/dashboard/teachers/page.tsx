@@ -206,7 +206,7 @@ export default function TeachersPage() {
 
                 // If login email or admin status changed, call server-side API
                 if (loginEmailChanged || adminChanged) {
-                    const updateBody: any = { firestoreDocId: editingTeacher.id };
+                    const updateBody: any = { firestoreDocId: editingTeacher.id, teacherId: formData.teacherId };
                     if (loginEmailChanged) updateBody.newLoginEmail = newLoginEmail;
                     if (adminChanged) updateBody.isAdmin = formData.isAdmin;
 
@@ -256,6 +256,7 @@ export default function TeachersPage() {
                         Authorization: `Bearer ${freshToken}`,
                     },
                     body: JSON.stringify({
+                        teacherId: formData.teacherId,
                         loginEmail: formData.loginEmail,
                         displayEmail: formData.email,
                         password: formData.password,

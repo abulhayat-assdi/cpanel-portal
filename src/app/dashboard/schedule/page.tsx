@@ -5,7 +5,7 @@ import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
 import { getClassesByTeacherId, requestClassCompletion, ClassSchedule, getAllClassesSchedules, syncBatchClassSchedules, markClassAsCompleted, getBatchClassCounts, getBatches, addBatch, toggleBatchStatus, getCompletedClassesByBatch, BatchItem } from "@/services/scheduleService";
 import { useAuth } from "@/contexts/AuthContext";
-import { getClassRoutines, addClassRoutine, ClassRoutine } from "@/services/routinesService";
+import { getClassRoutines, addClassRoutine, updateClassRoutine, deleteClassRoutine, ClassRoutine } from "@/services/routinesService";
 import Button from "@/components/ui/Button";
 
 export default function SchedulePage() {
@@ -29,6 +29,15 @@ export default function SchedulePage() {
     const [newRoutineFile, setNewRoutineFile] = useState<File | null>(null);
     const [isAddingRoutine, setIsAddingRoutine] = useState(false);
     const [routineUploadProgress, setRoutineUploadProgress] = useState("");
+
+    // Edit Routine State
+    const [isEditRoutineModalOpen, setIsEditRoutineModalOpen] = useState(false);
+    const [editingRoutine, setEditingRoutine] = useState<ClassRoutine | null>(null);
+    const [editRoutineName, setEditRoutineName] = useState("");
+    const [editRoutineDate, setEditRoutineDate] = useState("");
+    const [editRoutineFile, setEditRoutineFile] = useState<File | null>(null);
+    const [isEditingRoutine, setIsEditingRoutine] = useState(false);
+    const [isDeletingRoutine, setIsDeletingRoutine] = useState<string | null>(null);
 
     // Add Schedule Modal State
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -205,20 +214,35 @@ export default function SchedulePage() {
 
     // For admin: filter current week. For teacher: show last 7 days + all future schedules.
     const getTeacherDateBoundary = () => {
-        const past = new Date();
+        const past = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
         past.setDate(past.getDate() - 7); // 7 days ago
-        return past.toISOString().split('T')[0];
+        const y = past.getFullYear();
+        const m = String(past.getMonth() + 1).padStart(2, '0');
+        const day = String(past.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     };
 
     const getWeekBoundaries = () => {
-        const curr = new Date();
-        const first = curr.getDate() - curr.getDay();
-        const last = first + 6;
-        const firstday = new Date(curr.setDate(first));
-        const lastday = new Date(curr.setDate(last));
+        const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
+        const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+        const diffToFriday = (dayOfWeek + 2) % 7;
+        
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - diffToFriday);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        const format = (d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
         return {
-            start: firstday.toISOString().split('T')[0],
-            end: lastday.toISOString().split('T')[0]
+            start: format(startOfWeek),
+            end: format(endOfWeek)
         };
     };
 
@@ -232,15 +256,32 @@ export default function SchedulePage() {
         if (dmyMatch) {
              const [, d, m, y] = dmyMatch;
              compareDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        } else {
+             try {
+                 const d = new Date(schedule.date);
+                 if (!isNaN(d.getTime())) {
+                     // Get local date string instead of ISO to avoid timezone mismatch
+                     const y = d.getFullYear();
+                     const m = String(d.getMonth() + 1).padStart(2, '0');
+                     const day = String(d.getDate()).padStart(2, '0');
+                     compareDate = `${y}-${m}-${day}`;
+                 }
+             } catch {}
         }
 
-        if (userProfile?.role === 'admin') {
-            // Admin: current week only
+        // Apply filtering logic based on role AND teacherId
+        if (userProfile?.teacherId) {
+            // Teacher (even if they also have admin role): last 7 days + all future
+            if (compareDate < teacherPastBoundary) {
+                return false;
+            }
+        } else if (userProfile?.role === 'admin') {
+            // Admin (without a teacher ID): current week only
             if (compareDate < weekBounds.start || compareDate > weekBounds.end) {
                 return false;
             }
         } else {
-            // Teacher: last 7 days + all future
+            // Fallback for regular teachers
             if (compareDate < teacherPastBoundary) {
                 return false;
             }
@@ -386,6 +427,108 @@ export default function SchedulePage() {
         setNewRoutineFile(null);
     };
 
+    const openEditRoutineModal = (routine: ClassRoutine) => {
+        setEditingRoutine(routine);
+        setEditRoutineName(routine.title);
+        setEditRoutineDate(routine.date !== "N/A" ? routine.date : "");
+        setEditRoutineFile(null);
+        setIsEditRoutineModalOpen(true);
+    };
+
+    const resetEditRoutineForm = () => {
+        setIsEditRoutineModalOpen(false);
+        setEditingRoutine(null);
+        setEditRoutineName("");
+        setEditRoutineDate("");
+        setEditRoutineFile(null);
+    };
+
+    const handleUpdateRoutine = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRoutine || !editRoutineName.trim() || !editRoutineDate.trim()) {
+            alert("Please fill required fields.");
+            return;
+        }
+
+        setIsEditingRoutine(true);
+        setRoutineUploadProgress("Updating routine...");
+        try {
+            let fileUrl = editingRoutine.fileUrl;
+
+            // If a new file is selected
+            if (editRoutineFile) {
+                setRoutineUploadProgress("Uploading new file...");
+                const formData = new FormData();
+                formData.append("file", editRoutineFile);
+                formData.append("folder", "routines");
+
+                const uploadRes = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (!uploadRes.ok) throw new Error("File upload failed");
+
+                const { url } = await uploadRes.json();
+                fileUrl = url;
+
+                // Delete old file
+                if (editingRoutine.fileUrl) {
+                    await fetch("/api/upload", {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ url: editingRoutine.fileUrl })
+                    });
+                }
+            }
+
+            setRoutineUploadProgress("Saving changes...");
+            await updateClassRoutine(editingRoutine.id, {
+                title: editRoutineName,
+                date: editRoutineDate,
+                fileUrl: fileUrl,
+            });
+
+            // Refresh routines
+            const data = await getClassRoutines();
+            setRoutines(data);
+            resetEditRoutineForm();
+        } catch (error) {
+            console.error("Error updating routine:", error);
+            alert("Failed to update routine. Please try again.");
+        } finally {
+            setIsEditingRoutine(false);
+            setRoutineUploadProgress("");
+        }
+    };
+
+    const handleDeleteRoutine = async (routine: ClassRoutine) => {
+        if (!confirm(`Are you sure you want to delete "${routine.title}"?`)) return;
+
+        setIsDeletingRoutine(routine.id);
+        try {
+            // Delete file first
+            if (routine.fileUrl) {
+                await fetch("/api/upload", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: routine.fileUrl })
+                });
+            }
+
+            // Delete from Firestore
+            await deleteClassRoutine(routine.id);
+
+            // Refresh routines
+            setRoutines(prev => prev.filter(r => r.id !== routine.id));
+        } catch (error) {
+            console.error("Error deleting routine:", error);
+            alert("Failed to delete routine.");
+        } finally {
+            setIsDeletingRoutine(null);
+        }
+    };
+
     // --- Batch Management Handlers ---
 
     const handleOpenManageBatches = async () => {
@@ -446,15 +589,19 @@ export default function SchedulePage() {
 
             // Prepare CSV text
             const headers = ["Class Date", "Day", "Time", "Batch", "Subject", "Teacher Name", "Status"];
-            const rows = classes.map(c => [
-                `"${c.date || ""}"`,
-                `"${c.day || ""}"`,
-                `"${c.time || ""}"`,
-                `"${c.batch || ""}"`,
-                `"${c.subject || ""}"`,
-                `"${c.teacherName || ""}"`,
-                `"${c.status || ""}"`
-            ]);
+            const rows = classes.map(c => {
+                const dateObj = new Date(c.date);
+                const dayStr = isNaN(dateObj.getTime()) ? "" : dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                return [
+                    `"${c.date || ""}"`,
+                    `"${dayStr}"`,
+                    `"${c.startTime || ""} - ${c.endTime || ""}"`,
+                    `"${c.batch || ""}"`,
+                    `"${c.subject || ""}"`,
+                    `"${c.teacherName || ""}"`,
+                    `"${c.status || ""}"`
+                ];
+            });
             
             const csvContent = [
                 headers.join(","),
@@ -497,11 +644,32 @@ export default function SchedulePage() {
 
     const handleClearScheduleRows = () => {
         if (confirm("Are you sure you want to clear all data in the table?")) {
-            rowDataRef.current = initializeEmptyRows(columns, maxRows);
-            // Clear all DOM inputs directly for instant feedback
+            // Preserve the IDs so the backend knows to delete existing records
+            const emptyRowsWithIds = rowDataRef.current.map(row => {
+                const emptyRow: Record<string, string> = Object.fromEntries([...columns, "id"].map(c => [c, ""]));
+                emptyRow.id = row.id || "";
+                if (selectedBatchForGrid) emptyRow.batch = selectedBatchForGrid;
+                return emptyRow;
+            });
+            
+            // Fill the rest with completely empty rows up to maxRows
+            while (emptyRowsWithIds.length < maxRows) {
+                const emptyRow = Object.fromEntries([...columns, "id"].map(c => [c, ""]));
+                if (selectedBatchForGrid) emptyRow.batch = selectedBatchForGrid;
+                emptyRowsWithIds.push(emptyRow);
+            }
+            rowDataRef.current = emptyRowsWithIds;
+            setGridRenderKey(k => k + 1);
+
+            // Clear all DOM inputs directly for instant feedback (backup)
             if (gridRef.current) {
                 gridRef.current.querySelectorAll('input[data-row], select[data-row]').forEach((el) => {
-                    (el as HTMLInputElement | HTMLSelectElement).value = "";
+                    const elem = el as HTMLInputElement | HTMLSelectElement;
+                    if (elem.tagName === 'SELECT' && elem.getAttribute('data-col') === 'status') {
+                        elem.value = 'Scheduled';
+                    } else if (elem.tagName === 'INPUT') {
+                        elem.value = '';
+                    }
                 });
             }
         }
@@ -698,13 +866,13 @@ export default function SchedulePage() {
                             Class Schedule
                         </h1>
                         <p className="text-[#6b7280] mt-1">
-                            {userProfile.teacherId
+                            {userProfile?.teacherId
                                 ? `Viewing schedule for Teacher ID: ${userProfile.teacherId} (Last 7 Days & Upcoming)`
-                                : userProfile.role === "admin"
+                                : userProfile?.role === "admin"
                                     ? "Viewing all teacher schedules (Current Week)"
                                     : "No Teacher ID linked to this account"}
                         </p>
-                        {!userProfile.teacherId && userProfile.role !== "admin" && (
+                        {!userProfile?.teacherId && userProfile?.role !== "admin" && (
                             <p className="text-xs text-red-500 font-medium mt-1">
                                 ⚠️ Warning: Your profile is missing a Teacher ID. Classes from the grid will not appear.
                             </p>
@@ -916,16 +1084,36 @@ export default function SchedulePage() {
                                     </div>
 
                                     {/* View Button */}
-                                    <a
-                                        href={routine.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block w-full"
-                                    >
-                                        <button className="w-full py-3 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors">
-                                            View / Download
-                                        </button>
-                                    </a>
+                                    <div className="flex flex-col gap-2">
+                                        <a
+                                            href={routine.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block w-full"
+                                        >
+                                            <button className="w-full py-2.5 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors shadow-sm">
+                                                View / Download
+                                            </button>
+                                        </a>
+                                        
+                                        {userProfile?.role === "admin" && (
+                                            <div className="flex gap-2 w-full mt-1">
+                                                <button
+                                                    onClick={() => openEditRoutineModal(routine)}
+                                                    className="flex-1 py-1.5 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition-colors text-sm border border-blue-200"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteRoutine(routine)}
+                                                    disabled={isDeletingRoutine === routine.id}
+                                                    className="flex-1 py-1.5 bg-red-50 text-red-700 font-semibold rounded-lg hover:bg-red-100 transition-colors text-sm border border-red-200 disabled:opacity-50"
+                                                >
+                                                    {isDeletingRoutine === routine.id ? "..." : "Delete"}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </CardBody>
                             </Card>
                         ))
@@ -1211,6 +1399,79 @@ export default function SchedulePage() {
                                     className="w-full bg-[#059669] hover:bg-[#047857] text-white"
                                 >
                                     {isAddingRoutine ? (routineUploadProgress || "Processing...") : "Add Routine"}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Routine Modal */}
+            {isEditRoutineModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={resetEditRoutineForm}>
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-900">
+                                Edit Class Routine
+                            </h3>
+                            <button
+                                onClick={resetEditRoutineForm}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateRoutine} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    value={editRoutineName}
+                                    onChange={(e) => setEditRoutineName(e.target.value)}
+                                    placeholder="e.g. Batch - 06 Routine"
+                                    required
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input
+                                    type="date"
+                                    value={editRoutineDate}
+                                    onChange={(e) => setEditRoutineDate(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Update Routine File (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={(e) => setEditRoutineFile(e.target.files?.[0] || null)}
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty to keep the existing file.</p>
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={resetEditRoutineForm}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isEditingRoutine}
+                                    className="w-full bg-[#059669] hover:bg-[#047857] text-white"
+                                >
+                                    {isEditingRoutine ? (routineUploadProgress || "Processing...") : "Update Routine"}
                                 </Button>
                             </div>
                         </form>

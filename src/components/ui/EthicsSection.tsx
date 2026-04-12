@@ -1,6 +1,6 @@
 "use client";
 
-import { Reveal } from "./Reveal";
+import Reveal from "./Reveal";
 
 const coreValues = [
     "Trust and responsibility",

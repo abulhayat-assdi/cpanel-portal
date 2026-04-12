@@ -11,6 +11,7 @@ import {
     createHomeworkAssignment,
     getHomeworkAssignmentsByTeacher,
     deleteHomeworkAssignment,
+    updateHomeworkAssignment,
     HomeworkAssignment
 } from "@/services/homeworkService";
 import { getAllBatchInfo, getPublicUniqueBatches } from "@/services/batchInfoService";
@@ -36,6 +37,15 @@ export default function HomeworkViewPage() {
     const [viewingSubmission, setViewingSubmission] = useState<HomeworkSubmission | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [cleanupCount, setCleanupCount] = useState(0);
+
+    const [assignmentToDelete, setAssignmentToDelete] = useState<HomeworkAssignment | null>(null);
+    const [isDeletingAssignment, setIsDeletingAssignment] = useState(false);
+
+    const [assignmentToEdit, setAssignmentToEdit] = useState<HomeworkAssignment | null>(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [editBatch, setEditBatch] = useState("");
+    const [editDeadline, setEditDeadline] = useState("");
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     const isAdmin = userProfile?.role === "admin";
     const isTeacher = userProfile?.role === "teacher";
@@ -122,14 +132,32 @@ export default function HomeworkViewPage() {
         }
     };
 
-    const handleDeleteAssignment = async (id: string, title: string) => {
-        if (!confirm(`Delete assignment "${title}"?\nThis restricts new submissions. Existing submissions go to "Other Submissions".`)) return;
+    const confirmDeleteAssignment = async () => {
+        if (!assignmentToDelete) return;
+        setIsDeletingAssignment(true);
         try {
-            await deleteHomeworkAssignment(id);
+            // Find all submissions associated with this assignment
+            const subs = homework.filter(h => h.assignmentId === assignmentToDelete.id || (!h.assignmentId && h.subject === assignmentToDelete.title));
+            
+            // Delete all corresponding homework files and documents
+            for (const hw of subs) {
+                await deleteHomework(hw.id, hw.storagePath);
+            }
+            
+            // Delete the assignment folder
+            await deleteHomeworkAssignment(assignmentToDelete.id);
             fetchData();
+            setAssignmentToDelete(null);
+            
+            // If we are currently viewing this folder, return to folders view
+            if (selectedFolder !== "other" && selectedFolder?.id === assignmentToDelete.id) {
+                setSelectedFolder(null);
+            }
         } catch (err) {
             console.error(err);
-            alert("Failed to delete assignment");
+            alert("Failed to delete assignment folder.");
+        } finally {
+            setIsDeletingAssignment(false);
         }
     };
 
@@ -145,6 +173,33 @@ export default function HomeworkViewPage() {
             alert("Failed to delete homework.");
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const handleOpenEdit = (a: HomeworkAssignment) => {
+        setAssignmentToEdit(a);
+        setEditTitle(a.title);
+        setEditBatch(a.batchName);
+        setEditDeadline(a.deadlineDate);
+    };
+
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!assignmentToEdit) return;
+        setIsSavingEdit(true);
+        try {
+            await updateHomeworkAssignment(assignmentToEdit.id, {
+                title: editTitle,
+                batchName: editBatch,
+                deadlineDate: editDeadline,
+            });
+            fetchData();
+            setAssignmentToEdit(null);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update assignment.");
+        } finally {
+            setIsSavingEdit(false);
         }
     };
 
@@ -236,38 +291,53 @@ export default function HomeworkViewPage() {
                                 const subs = getSubmissionsForAssignment(a);
                                 return (
                                     <div 
-                                        key={a.id} 
-                                        onClick={() => setSelectedFolder(a)}
-                                        className="bg-white hover:bg-emerald-50/40 p-6 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 hover:border-emerald-200 transition-all cursor-pointer group relative flex flex-col h-full"
+                                        key={a.id}
+                                        className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-emerald-200 transition-all group flex flex-col h-full overflow-hidden"
                                     >
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(a.id, a.title); }}
-                                            className="absolute top-4 right-4 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm"
-                                            title="Delete Assignment"
+                                        {/* Clickable body area — navigates into folder */}
+                                        <div
+                                            onClick={() => setSelectedFolder(a)}
+                                            className="p-6 cursor-pointer hover:bg-emerald-50/40 transition-colors flex-1 flex flex-col"
                                         >
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-
-                                        {/* Folder Graphic */}
-                                        <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform origin-left text-emerald-500 drop-shadow-sm">
-                                            {subs.length > 0 ? "📂" : "📁"}
+                                            {/* Folder Graphic */}
+                                            <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform origin-left drop-shadow-sm">
+                                                {subs.length > 0 ? "📂" : "📁"}
+                                            </div>
+                                            
+                                            <h3 className="font-bold text-gray-900 line-clamp-2 leading-tight flex-1">{a.title}</h3>
+                                            
+                                            <div className="mt-4 pt-4 border-t border-gray-50 text-xs flex flex-col gap-1.5">
+                                                <div className="flex justify-between w-full">
+                                                    <span className="text-gray-500">Batch:</span>
+                                                    <span className="font-bold text-gray-700">{a.batchName === "all" ? "All Batches" : a.batchName}</span>
+                                                </div>
+                                                <div className="flex justify-between w-full">
+                                                    <span className="text-gray-500">Deadline:</span>
+                                                    <span className="font-bold text-red-600">{a.deadlineDate}</span>
+                                                </div>
+                                                <div className="flex justify-between w-full mt-1.5 pt-1.5 border-t border-gray-100/50">
+                                                    <span className="text-gray-600 font-medium">Submissions:</span>
+                                                    <span className="font-black text-emerald-600 text-sm bg-emerald-100 px-2 rounded-full">{subs.length}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        
-                                        <h3 className="font-bold text-gray-900 line-clamp-2 leading-tight flex-1 pr-6">{a.title}</h3>
-                                        
-                                        <div className="mt-4 pt-4 border-t border-gray-50 text-xs flex flex-col gap-1.5">
-                                            <div className="flex justify-between w-full">
-                                                <span className="text-gray-500">Batch:</span>
-                                                <span className="font-bold text-gray-700">{a.batchName === "all" ? "All Batches" : a.batchName}</span>
-                                            </div>
-                                            <div className="flex justify-between w-full">
-                                                <span className="text-gray-500">Deadline:</span>
-                                                <span className="font-bold text-red-600">{a.deadlineDate}</span>
-                                            </div>
-                                            <div className="flex justify-between w-full mt-1.5 pt-1.5 border-t border-gray-100/50">
-                                                <span className="text-gray-600 font-medium">Submissions:</span>
-                                                <span className="font-black text-emerald-600 text-sm bg-emerald-100 px-2 rounded-full">{subs.length}</span>
-                                            </div>
+
+                                        {/* Action bar — NOT inside the clickable area */}
+                                        <div className="flex border-t border-gray-100 bg-gray-50/80 divide-x divide-gray-100">
+                                            <button
+                                                onClick={() => handleOpenEdit(a)}
+                                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => setAssignmentToDelete(a)}
+                                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                Delete
+                                            </button>
                                         </div>
                                     </div>
                                 );
@@ -522,6 +592,138 @@ export default function HomeworkViewPage() {
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Assignment Confirmation Modal */}
+            {assignmentToDelete && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    onClick={() => !isDeletingAssignment && setAssignmentToDelete(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-8">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4 scale-100 hover:scale-110 transition-transform">
+                                <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900 mb-2">Delete Folder?</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Are you sure you want to delete the folder <strong className="text-gray-800">"{assignmentToDelete.title}"</strong>?
+                            </p>
+                            <p className="text-xs text-red-500 font-bold bg-red-50 py-3 px-3 rounded-lg border border-red-100">
+                                This will also permanently delete all homework submissions inside this folder.
+                            </p>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex flex-col sm:flex-row items-center justify-center gap-3 border-t border-gray-100">
+                            <button
+                                onClick={() => setAssignmentToDelete(null)}
+                                disabled={isDeletingAssignment}
+                                className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition-all w-full shadow-sm"
+                            >
+                                No, Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteAssignment}
+                                disabled={isDeletingAssignment}
+                                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-all w-full shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
+                                {isDeletingAssignment ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Deleting...
+                                    </>
+                                ) : "Yes, Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Assignment Modal */}
+            {assignmentToEdit && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    onClick={() => !isSavingEdit && setAssignmentToEdit(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-5 text-white flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                <h3 className="text-lg font-bold">Edit Assignment Folder</h3>
+                            </div>
+                            <button
+                                onClick={() => setAssignmentToEdit(null)}
+                                disabled={isSavingEdit}
+                                className="text-white/80 hover:text-white text-2xl leading-none"
+                            >✕</button>
+                        </div>
+                        <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Assignment Title <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editTitle}
+                                    onChange={e => setEditTitle(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Target Batch <span className="text-red-500">*</span></label>
+                                <select
+                                    required
+                                    value={editBatch}
+                                    onChange={e => setEditBatch(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                                >
+                                    <option value="all">🌐 All Batches</option>
+                                    {allBatches.map(b => (
+                                        <option key={b} value={b}>{b}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Deadline Date <span className="text-red-500">*</span></label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={editDeadline}
+                                    onChange={e => setEditDeadline(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="pt-4 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setAssignmentToEdit(null)}
+                                    disabled={isSavingEdit}
+                                    className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingEdit || !editTitle || !editDeadline}
+                                    className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isSavingEdit ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Saving...
+                                        </>
+                                    ) : "Save Changes"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

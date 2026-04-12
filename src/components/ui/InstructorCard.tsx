@@ -28,6 +28,15 @@ export default function InstructorCard({ name, role, description, email, image }
         setTimeout(() => setCopied(false), 1500);
     };
 
+    // Helper to get direct image URL from Google Drive link
+    const getThumbnailUrl = (url: string) => {
+        if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+            const id = url.split("/d/")[1].split("/")[0];
+            return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+        }
+        return url;
+    };
+
     return (
         <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden flex flex-col">
 
@@ -39,7 +48,7 @@ export default function InstructorCard({ name, role, description, email, image }
                     <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg ring-2 ring-emerald-100 group-hover:ring-emerald-200 transition-all duration-300 overflow-hidden flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100">
                         {image ? (
                             <Image
-                                src={image}
+                                src={getThumbnailUrl(image)}
                                 alt={name}
                                 fill
                                 className="object-cover object-top"

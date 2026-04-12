@@ -88,11 +88,11 @@ export default function StudentDashboardOverview() {
                 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">Welcome back, {displayName}!</h1>
-                        <p className="text-emerald-50 text-lg opacity-90">
+                        <h1 className="no-gradient text-white text-3xl font-bold mb-2">Welcome back, {displayName}!</h1>
+                        <p className="no-gradient text-emerald-50 text-lg opacity-90">
                             Your dedicated student portal for the Art of Sales & Marketing Course
                         </p>
-                        <p className="text-emerald-100 text-sm mt-1.5 opacity-80">📌 আপনার প্রোফাইল সবসময় আপডেট রাখুন।</p>
+                        <p className="no-gradient text-emerald-100 text-sm mt-1.5 opacity-80">📌 আপনার প্রোফাইল সবসময় আপডেট রাখুন।</p>
                     </div>
                     <div className="bg-white/20 backdrop-blur-sm rounded-xl py-3 px-6 border border-white/30 text-right shrink-0">
                         <p className="text-sm font-semibold text-emerald-100 uppercase tracking-widest">Enrollment Details</p>
