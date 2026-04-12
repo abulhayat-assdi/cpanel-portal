@@ -36,10 +36,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, id: reportRef.id });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Tracker Submission Error:", err);
+    const errorMessage = err instanceof Error ? err.message : "An internal error occurred while processing the request.";
     return NextResponse.json(
-      { success: false, message: "An internal error occurred while processing the request." },
+      { success: false, message: errorMessage },
       { status: 500 }
     );
   }

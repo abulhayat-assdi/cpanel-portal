@@ -20,7 +20,7 @@ const EyeSlashIcon = ({ className }: { className: string }) => (
 );
 
 export default function StudentLoginPage() {
-    const { userProfile, loading, loginWithEmail, registerWithEmail, sendPasswordReset } = useAuth();
+    const { loading, loginWithEmail, registerWithEmail, sendPasswordReset } = useAuth();
 
     // UI States
     const [isRegistering, setIsRegistering] = useState(false);
@@ -93,17 +93,6 @@ export default function StudentLoginPage() {
         }
     }, [roll, batchStudents]);
 
-    // Redirect logic
-    useEffect(() => {
-        if (!loading && userProfile) {
-            if (userProfile.role === "student") {
-                window.location.href = "/student-dashboard";
-            } else if (userProfile.role === "admin" || userProfile.role === "teacher") {
-                window.location.href = "/dashboard";
-            }
-        }
-    }, [userProfile, loading]);
-
     const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
     const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -131,8 +120,9 @@ export default function StudentLoginPage() {
                 window.location.href = "/student-dashboard";
                 return; // Prevent finally block from clearing state while navigating
             }
-        } catch (err: any) {
-            setAuthError(err.message || "Authentication failed.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Authentication failed.";
+            setAuthError(errorMessage);
             setIsSubmitting(false); // Only reset on error
         }
     };
@@ -160,8 +150,9 @@ export default function StudentLoginPage() {
                 setSuccessMessage("");
                 setPassword("");
             }, 5000);
-        } catch (err: any) {
-            setAuthError(err.message || "Failed to send reset email.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to send reset email.";
+            setAuthError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserProfile } from "@/types/auth";
 
 // Define how to track notifications for each sidebar path
 const NOTIFICATION_CONFIGS = [
@@ -12,7 +13,7 @@ const NOTIFICATION_CONFIGS = [
         collectionName: "homework_submissions",
         timestampField: "submittedAt",
         roles: ["teacher", "admin"],
-        getExtraConstraints: (userProfile: any) => {
+        getExtraConstraints: (userProfile: UserProfile | null) => {
             // Teacher only sees homework assigned to them
             if (userProfile?.role === "teacher") {
                 return [where("teacherName", "==", userProfile.displayName)];

@@ -71,8 +71,9 @@ export default function TrackerDashboardPage() {
             } else {
                 setDashEmptyMessage(`⚠️ ${result.message || "ডেটা লোড করতে সমস্যা হয়েছে।"}`);
             }
-        } catch (err: any) {
-            setDashEmptyMessage(`⚠️ সংযোগ ব্যর্থ: ${err.message}`);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
+            setDashEmptyMessage(`⚠️ সংযোগ ব্যর্থ: ${errorMessage}`);
         } finally {
             setDashLoading(false);
         }
@@ -134,8 +135,9 @@ export default function TrackerDashboardPage() {
             const fileName = `${exportBatch.replace(/\s+/g, "_")}_${fromDateStr}_to_${toDateStr}.xlsx`;
             xlsx.writeFile(wb, fileName);
             showToast(`✅ ${result.count} টি রিপোর্ট ডাউনলোড হয়েছে!`, "success");
-        } catch (err: any) {
-            showToast(`❌ সংযোগ ব্যর্থ: ${err.message}`, "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
+            showToast(`❌ সংযোগ ব্যর্থ: ${errorMessage}`, "error");
         } finally {
             setIsExporting(false);
         }

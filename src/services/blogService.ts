@@ -9,7 +9,9 @@ import {
     serverTimestamp,
     query,
     orderBy,
-    where
+    where,
+    Timestamp,
+    FieldValue
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -27,9 +29,9 @@ export interface BlogPost {
     metaDescription?: string;
     keywords?: string;
     status: 'draft' | 'published';
-    createdAt: any; // Timestamp
-    publishedAt?: any; // Timestamp
-    updatedAt?: any; // Timestamp
+    createdAt: Timestamp | Date | FieldValue | null;
+    publishedAt?: Timestamp | Date | FieldValue | null;
+    updatedAt?: Timestamp | Date | FieldValue | null;
 }
 
 const COLLECTION_NAME = 'posts';

@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 // Note: For Next.js standalone, the actual entry point is usually .next/standalone/server.js
 // but some shared hosts prefer a file in the root directory.
 
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname, port, dir: __dirname });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {

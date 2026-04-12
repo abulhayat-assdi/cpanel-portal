@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, FieldValue } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, FieldValue, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COLLECTIONS } from "@/lib/constants";
 
@@ -106,8 +106,8 @@ export const getAllStudentNotices = async (): Promise<StudentNotice[]> => {
         const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StudentNotice));
         // Sort in-memory descending by createdAt
         return docs.sort((a, b) => {
-            const aMs = (a.createdAt as any)?.toMillis?.() ?? 0;
-            const bMs = (b.createdAt as any)?.toMillis?.() ?? 0;
+            const aMs = (a.createdAt instanceof Timestamp) ? a.createdAt.toMillis() : 0;
+            const bMs = (b.createdAt instanceof Timestamp) ? b.createdAt.toMillis() : 0;
             return bMs - aMs;
         });
     } catch (error: unknown) {
@@ -173,8 +173,8 @@ export const getAllNotices = async (): Promise<Notice[]> => {
         const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notice));
         // Sort in-memory descending by createdAt
         return docs.sort((a, b) => {
-            const aMs = (a.createdAt as any)?.toMillis?.() ?? 0;
-            const bMs = (b.createdAt as any)?.toMillis?.() ?? 0;
+            const aMs = (a.createdAt instanceof Timestamp) ? a.createdAt.toMillis() : 0;
+            const bMs = (b.createdAt instanceof Timestamp) ? b.createdAt.toMillis() : 0;
             return bMs - aMs;
         });
     } catch (error: unknown) {

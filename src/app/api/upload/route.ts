@@ -39,10 +39,11 @@ export async function POST(req: NextRequest) {
     // Return the public URL path
     const url = `/${uploadSubDir}/${uniqueFilename}`;
     return NextResponse.json({ url });
-  } catch (error: any) {
+    } catch (error) {
     console.error("Error uploading file:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to upload file";
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

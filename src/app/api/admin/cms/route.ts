@@ -59,8 +59,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: "Page content updated successfully and cache purged." });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating CMS content:", error);
-    return NextResponse.json({ error: "Failed to update page content." }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Failed to update page content.";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

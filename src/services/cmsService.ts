@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { 
   defaultHomePageContent, 
@@ -30,7 +30,7 @@ export const getPageContent = async (pageId: string) => {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      const def = defaultContent as any;
+      const def = defaultContent as Record<string, unknown>;
       
       // Safe merge of sections
       return {
@@ -64,7 +64,7 @@ export const getPageContent = async (pageId: string) => {
   }
 };
 
-export const updatePageContent = async (pageId: string, data: any) => {
+export const updatePageContent = async (pageId: string, data: DocumentData) => {
   try {
     const docRef = doc(db, PAGE_COLLECTION, pageId);
     await setDoc(docRef, data, { merge: true });

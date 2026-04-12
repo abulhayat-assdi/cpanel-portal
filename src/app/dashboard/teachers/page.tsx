@@ -289,9 +289,10 @@ export default function TeachersPage() {
             await fetchTeachers();
             setIsModalOpen(false);
             resetForm();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save teacher", error);
-            alert(error.message || "An unexpected error occurred. Please try again.");
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Please try again.";
+            alert(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

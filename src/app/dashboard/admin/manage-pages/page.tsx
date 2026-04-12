@@ -66,8 +66,9 @@ export default function ManagePages() {
             } else {
                 throw new Error(result.error || "Failed to update content");
             }
-        } catch (error: any) {
-            setMessage({ type: "error", text: error.message });
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An error occurred";
+            setMessage({ type: "error", text: errorMessage });
         } finally {
             setSaving(false);
         }

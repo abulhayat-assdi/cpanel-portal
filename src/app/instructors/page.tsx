@@ -6,6 +6,16 @@ import { getAdminServices } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
 import { getImageUrl } from "@/lib/getImageUrl";
 
+interface Teacher {
+    id: string;
+    name: string;
+    designation: string;
+    about: string;
+    email: string;
+    profileImageUrl: string;
+    [key: string]: unknown;
+}
+
 export const dynamic = "force-dynamic";
 
 const TEACHER_IMAGES: Record<string, string> = {
@@ -140,7 +150,7 @@ export default async function InstructorsPage() {
                 <section className="w-full pb-16 md:pb-24 flex-grow relative z-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructors.map((instructor: any, index: number) => (
+                            {instructors.map((instructor: Teacher, index: number) => (
                                 <InstructorCard
                                     key={instructor.id}
                                     index={index}

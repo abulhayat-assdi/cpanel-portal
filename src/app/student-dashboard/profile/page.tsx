@@ -117,8 +117,9 @@ export default function StudentProfilePage() {
 
             setSubmitted(true);
             setIsEditing(false);
-        } catch (err: any) {
-            setError(err.message || "Failed to submit update request. Please try again.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to submit update request. Please try again.";
+            setError(errorMessage);
         } finally {
             setSubmitting(false);
         }

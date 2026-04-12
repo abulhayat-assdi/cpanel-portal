@@ -98,9 +98,10 @@ export default function EnrollPage() {
                 institute: "",
                 interest: "",
             });
-        } catch (error: any) {
+        } catch (error) {
             console.error("EmailJS Error:", error);
-            setMessage({ text: `Failed to submit: ${error.text || "Unknown error"}`, type: "error" });
+            const errorMessage = error instanceof Error && "text" in error ? (error as any).text : error instanceof Error ? error.message : "Unknown error";
+            setMessage({ text: `Failed to submit: ${errorMessage}`, type: "error" });
         } finally {
             setLoading(false);
         }

@@ -19,7 +19,7 @@ export interface CommentReply {
     id: string;
     authorName: string;
     content: string;
-    createdAt: any;
+    createdAt: Timestamp | Date | string;
 }
 
 export interface BlogComment {
@@ -29,7 +29,7 @@ export interface BlogComment {
     content: string;
     likes: number;
     replies: CommentReply[];
-    createdAt: any;
+    createdAt: Timestamp | Date | string;
 }
 
 /**
@@ -54,7 +54,7 @@ export const getCommentsByBlogId = async (blogId: string): Promise<BlogComment[]
                     ? data.createdAt.toDate().toISOString()
                     : new Date().toISOString(),
                 // Ensure replies also have proper string dates
-                replies: (data.replies || []).map((reply: any) => ({
+                replies: (data.replies || []).map((reply: CommentReply) => ({
                     ...reply,
                     createdAt: reply.createdAt instanceof Timestamp
                         ? reply.createdAt.toDate().toISOString()

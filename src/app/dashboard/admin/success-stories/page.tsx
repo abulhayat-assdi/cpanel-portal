@@ -294,8 +294,9 @@ export default function SuccessStoriesAdminPage() {
             setShowVideoForm(false);
             setEditVideo(null);
             await loadVideos();
-        } catch (err: any) {
-            alert(err.message || "Failed to save video");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save video";
+            alert(errorMessage);
         }
     };
 
@@ -320,8 +321,9 @@ export default function SuccessStoriesAdminPage() {
             setShowReviewForm(false);
             setEditReview(null);
             await loadReviews();
-        } catch (err: any) {
-            alert(err.message || "Failed to save review");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save review";
+            alert(errorMessage);
         }
     };
 

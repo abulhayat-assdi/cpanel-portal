@@ -42,6 +42,7 @@ export default async function BlogPage() {
         <>
             <Header
                 brandText="Sales & Marketing"
+                ctaText="Login as Student"
                 navLinks={navLinks}
             />
 

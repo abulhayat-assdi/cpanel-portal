@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
-    const { userProfile, loading, loginWithEmail, sendPasswordReset } = useAuth();
+    const { loginWithEmail, sendPasswordReset } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -13,13 +13,6 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
-
-    // Auto-redirect if already logged in
-    useEffect(() => {
-        if (!loading && userProfile) {
-            window.location.href = "/dashboard";
-        }
-    }, [userProfile, loading]);
 
     // Email validation
     const validateEmail = (email: string) => {
@@ -54,8 +47,9 @@ export default function LoginPage() {
             await loginWithEmail(email, password);
             window.location.href = "/dashboard";
             return;
-        } catch (err: any) {
-            setError(err.message || "Failed to login. Please try again.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to login. Please try again.";
+            setError(errorMessage);
             setIsSubmitting(false); // Only reset on error
         }
     };
@@ -84,8 +78,9 @@ export default function LoginPage() {
                 setShowForgotPassword(false);
                 setSuccessMessage("");
             }, 3000);
-        } catch (err: any) {
-            setError(err.message || "Failed to send reset email. Please try again.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to send reset email. Please try again.";
+            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

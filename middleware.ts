@@ -2,53 +2,62 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { COOKIES, APP_PATHS } from '@/lib/constants';
 
-// Whitelist of public API routes that don't need session verification
 const PUBLIC_API_ROUTES = [
     '/api/chat',
     '/api/auth/register',
-    '/api/feedback', // if public feedback is allowed
+    '/api/feedback',
 ];
+
+const isPublicAssetPath = (pathname: string) =>
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/images') ||
+    pathname === '/favicon.ico';
+
+const getRoleFromToken = (token: string) => {
+    try {
+        const segments = token.split('.');
+        if (segments.length !== 3) return undefined;
+
+        const payload = segments[1];
+        const padded = payload.padEnd(payload.length + (4 - (payload.length % 4)) % 4, '=');
+        const decoded = atob(padded);
+        const parsed = JSON.parse(decoded);
+        return typeof parsed?.role === 'string' ? parsed.role : undefined;
+    } catch {
+        return undefined;
+    }
+};
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // ── 1. Allow Public Assets & Whitelisted APIs ───────
-    if (
-        pathname.startsWith('/_next') || 
-        pathname.startsWith('/images') || 
-        pathname.startsWith('/favicon.ico') ||
-        PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))
-    ) {
+    if (isPublicAssetPath(pathname) || PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
         return NextResponse.next();
     }
 
-    // ── 2. Identify Protected Areas ──────────────────────
     const isDashboardPath = pathname.startsWith(APP_PATHS.DASHBOARD);
     const isStudentPath = pathname.startsWith(APP_PATHS.STUDENT_DASHBOARD);
+    const isAuthPage = pathname === APP_PATHS.LOGIN || pathname === APP_PATHS.STUDENT_LOGIN;
     const isApiRequest = pathname.startsWith('/api');
 
     const session = request.cookies.get(COOKIES.SESSION)?.value;
+    const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 100;
+    const role = hasSession ? getRoleFromToken(session) : undefined;
 
-    // ── 3. Session Validation Logic ──────────────────────
-    let isValidSession = false;
-    if (session) {
-        const segments = session.split('.');
-        // Basic JWT structure check (header.payload.signature)
-        if (segments.length === 3 && session.length > 100) {
-            isValidSession = true;
+    if (isAuthPage && hasSession) {
+        if (role === 'student') {
+            return NextResponse.redirect(new URL(APP_PATHS.STUDENT_DASHBOARD, request.url));
         }
+        return NextResponse.redirect(new URL(APP_PATHS.DASHBOARD, request.url));
     }
 
-    // ── 4. Redirect/Block Unauthorized Requests ──────────
-    if (!isValidSession) {
+    if (!hasSession) {
         if (isApiRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        
         if (isStudentPath) {
             return NextResponse.redirect(new URL(APP_PATHS.STUDENT_LOGIN, request.url));
         }
-        
         if (isDashboardPath) {
             return NextResponse.redirect(new URL(APP_PATHS.LOGIN, request.url));
         }
@@ -57,11 +66,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Global matcher covering Dashboards and API routes
 export const config = {
     matcher: [
-        '/dashboard/:path*', 
+        '/dashboard/:path*',
         '/student-dashboard/:path*',
-        '/api/:path*'
+        '/login',
+        '/student-login',
+        '/api/:path*',
     ],
 };

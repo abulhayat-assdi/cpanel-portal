@@ -58,7 +58,7 @@ export const saveBatchInfo = async (
         
         const docRef = doc(db, BATCH_INFO_COLLECTION, docId);
         
-        const docData: any = {
+        const docData: Record<string, unknown> = {
             ...student,
             id: docId,
             batchName,
@@ -104,14 +104,14 @@ export const saveBatchInfo = async (
             const trackerSnap = await getDocs(qTracker);
             
             if (!trackerSnap.empty) {
-                const chunks: any[] = [];
+                const chunks: QueryDocumentSnapshot[][] = [];
                 for (let i = 0; i < trackerSnap.docs.length; i += 500) {
                     chunks.push(trackerSnap.docs.slice(i, i + 500));
                 }
 
                 for (const chunk of chunks) {
                     const batchDeletion = writeBatch(db);
-                    chunk.forEach((reportDoc: any) => {
+                    chunk.forEach((reportDoc: QueryDocumentSnapshot) => {
                         batchDeletion.delete(reportDoc.ref);
                     });
                     await batchDeletion.commit();

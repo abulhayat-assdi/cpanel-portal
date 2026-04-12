@@ -69,19 +69,26 @@ export default function DailyTrackerFormPage() {
             setFetchError(false);
             try {
                 // Fetch raw batches from service (queries both meta and student collections)
-                const fetchedBatches: any[] = await getRawBatchesPublic();
+                const fetchedBatches: unknown[] = await getRawBatchesPublic();
                 
                 // CRITICAL - Robust Broad Filter to catch all active variations
-                const activeBatches = fetchedBatches.filter((b: any) => {
-                    const status = b.status?.trim().toLowerCase();
+                const activeBatches = fetchedBatches.filter((b: unknown) => {
+                    if (typeof b !== 'object' || b === null) return false;
+                    const batch = b as Record<string, unknown>;
+                    const status = String(batch.status || '').trim().toLowerCase();
                     // Catch: "running", "active", or explicitly not completed
-                    return status === 'running' || status === 'active' || b.isCompleted === false;
+                    return status === 'running' || status === 'active' || batch.isCompleted === false;
                 });
 
                 // Sort alphabetically by name
-                activeBatches.sort((a, b) => a.name.localeCompare(b.name));
+                activeBatches.sort((a: unknown, b: unknown) => {
+                    if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) return 0;
+                    const aName = String((a as Record<string, unknown>).name || '');
+                    const bName = String((b as Record<string, unknown>).name || '');
+                    return aName.localeCompare(bName);
+                });
 
-                setRunningBatches(activeBatches);
+                setRunningBatches(activeBatches as BatchMetadata[]);
                 
                 if (activeBatches.length === 0) {
                     console.warn("Daily Tracker: No active batches found after broad filtering.", fetchedBatches);
@@ -190,8 +197,9 @@ export default function DailyTrackerFormPage() {
             } else {
                 showToast(`❌ Error: ${result.error || result.message || "Submission failed"}`, "error");
             }
-        } catch (err: any) {
-            showToast(`❌ সমস্যা: ${err.message}`, "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "পরিষেবা সমস্যা।";
+            showToast(`❌ সমস্যা: ${errorMessage}`, "error");
         } finally {
             setIsSubmitting(false);
         }
