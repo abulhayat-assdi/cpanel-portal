@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo } from "@/services/batchInfoService";
 import Button from "@/components/ui/Button";
@@ -124,17 +124,24 @@ export default function AllBatchInfoPage() {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [selectedExportBatch, setSelectedExportBatch] = useState("all");
 
-    // Grid Data Ref
+    // Grid Data State (replaces ref — React controls all re-renders)
     const MAX_ROWS = 200;
+    const PAGE_SIZE = 50;
     const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTK", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
-    const gridRef = useRef<HTMLTableElement>(null);
-    const rowDataRef = useRef<Record<string, string>[]>([]);
+    const [gridData, setGridData] = useState<Record<string, string>[]>([]);
+    const [gridPage, setGridPage] = useState(0);
 
-    const initializeEmptyRows = () => {
+    const initializeEmptyRows = useCallback(() => {
         return Array.from({ length: MAX_ROWS }).map(() =>
             Object.fromEntries(COLUMNS.map(c => [c, ""]))
         );
-    };
+    }, []);
+
+    const totalPages = Math.ceil(MAX_ROWS / PAGE_SIZE);
+    const pagedRows = useMemo(() => {
+        const start = gridPage * PAGE_SIZE;
+        return gridData.slice(start, start + PAGE_SIZE);
+    }, [gridData, gridPage]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -239,15 +246,15 @@ export default function AllBatchInfoPage() {
         setNewBatchName(batchName);
         setIsEditingExisting(true);
 
-        // Pre-fill grid data
+        // Pre-fill grid data via React state
         const batchStudents = allStudents.filter(s => s.batchName === batchName);
         const wasRunning = batchStudents.length > 0 && batchStudents[0].batchType === "Running";
         setIsAddingRunningBatch(wasRunning);
-        rowDataRef.current = initializeEmptyRows();
 
+        const newGrid = initializeEmptyRows();
         batchStudents.forEach((student, index) => {
             if (index < MAX_ROWS) {
-                rowDataRef.current[index] = {
+                newGrid[index] = {
                     roll: student.roll || "",
                     name: student.name || "",
                     phone: student.phone || "",
@@ -265,7 +272,8 @@ export default function AllBatchInfoPage() {
                 };
             }
         });
-
+        setGridData(newGrid);
+        setGridPage(0);
         setIsSelectionModalOpen(false);
         setIsAddModalOpen(true);
     };
@@ -274,19 +282,22 @@ export default function AllBatchInfoPage() {
         setNewBatchName("");
         setIsEditingExisting(false);
         setIsAddingRunningBatch(isRunning);
-        rowDataRef.current = initializeEmptyRows();
+        setGridData(initializeEmptyRows());
+        setGridPage(0);
         setIsSelectionModalOpen(false);
         setIsAddModalOpen(true);
     };
 
-    // Form Event Handlers
-    const handleCellBlur = useCallback((rowIndex: number, field: string, value: string) => {
-        if (rowDataRef.current[rowIndex]) {
-            rowDataRef.current[rowIndex] = { ...rowDataRef.current[rowIndex], [field]: value };
-        }
+    // Form Event Handlers — update React state directly (no DOM mutation)
+    const handleCellChange = useCallback((rowIndex: number, field: string, value: string) => {
+        setGridData(prev => {
+            const next = [...prev];
+            next[rowIndex] = { ...next[rowIndex], [field]: value };
+            return next;
+        });
     }, []);
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement | HTMLSelectElement>, startRowIndex: number, startColKey: string) => {
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement | HTMLSelectElement>, startRowIndex: number, startColKey: string) => {
         e.preventDefault();
 
         const clipboardData = e.clipboardData.getData('Text');
@@ -296,32 +307,29 @@ export default function AllBatchInfoPage() {
         const startColIndex = (COLUMNS as readonly string[]).indexOf(startColKey);
         if (startColIndex === -1) return;
 
-        pastedLines.forEach((line, lineIndex) => {
-            const cells = line.split('\t');
-            const targetRowIndex = startRowIndex + lineIndex;
-
-            if (targetRowIndex >= MAX_ROWS) return;
-
-            cells.forEach((cellValue, cellIndex) => {
-                const targetColIndex = startColIndex + cellIndex;
-                if (targetColIndex < COLUMNS.length) {
-                    const fieldKey = COLUMNS[targetColIndex];
-
-                    if (rowDataRef.current[targetRowIndex]) {
-                        rowDataRef.current[targetRowIndex] = {
-                            ...rowDataRef.current[targetRowIndex],
-                            [fieldKey]: cellValue
-                        };
+        // Update React state — let React update the DOM
+        setGridData(prev => {
+            const next = [...prev];
+            pastedLines.forEach((line, lineIndex) => {
+                const cells = line.split('\t');
+                const targetRowIndex = startRowIndex + lineIndex;
+                if (targetRowIndex >= MAX_ROWS) return;
+                cells.forEach((cellValue, cellIndex) => {
+                    const targetColIndex = startColIndex + cellIndex;
+                    if (targetColIndex < COLUMNS.length) {
+                        const fieldKey = COLUMNS[targetColIndex];
+                        next[targetRowIndex] = { ...next[targetRowIndex], [fieldKey]: cellValue };
                     }
-
-                    const input = gridRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>(
-                        `[data-row="${targetRowIndex}"][data-col="${fieldKey}"]`
-                    );
-                    if (input) input.value = cellValue;
-                }
+                });
             });
+            return next;
         });
-    };
+
+        // Navigate to the page where paste began
+        const pasteEndRow = startRowIndex + pastedLines.length - 1;
+        const targetPage = Math.floor(Math.min(pasteEndRow, MAX_ROWS - 1) / PAGE_SIZE);
+        setGridPage(targetPage);
+    }, []);
 
     const handleSaveBatchInfo = async () => {
         if (!newBatchName.trim()) {
@@ -332,7 +340,7 @@ export default function AllBatchInfoPage() {
         setIsAdding(true);
         try {
             // Filter out purely empty rows
-            const validRows = rowDataRef.current.filter(row =>
+            const validRows = gridData.filter(row =>
                 row.roll && row.roll.trim() !== "" &&
                 row.name && row.name.trim() !== ""
             );
@@ -383,7 +391,7 @@ export default function AllBatchInfoPage() {
             setIsAdding(true);
             try {
                 // Filter out purely empty rows
-                const validRows = rowDataRef.current.filter(row =>
+                const validRows = gridData.filter(row =>
                     row.roll && row.roll.trim() !== "" &&
                     row.name && row.name.trim() !== ""
                 );
@@ -1060,12 +1068,8 @@ export default function AllBatchInfoPage() {
                             <div className="flex gap-4 items-center shrink-0">
                                 <button onClick={() => {
                                     if (confirm('Clear all grid data?')) {
-                                        rowDataRef.current = initializeEmptyRows();
-                                        if (gridRef.current) {
-                                            gridRef.current.querySelectorAll('input, select').forEach((el) => {
-                                                (el as HTMLInputElement | HTMLSelectElement).value = "";
-                                            });
-                                        }
+                                        setGridData(initializeEmptyRows());
+                                        setGridPage(0);
                                     }
                                 }} className="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1.5 border border-red-200 rounded">
                                     Clear Grid
@@ -1087,7 +1091,7 @@ export default function AllBatchInfoPage() {
                         </div>
 
                         <div className="flex-1 overflow-auto p-4 bg-gray-50">
-                            <table ref={gridRef} className="w-full border-collapse bg-white shadow-sm">
+                            <table className="w-full border-collapse bg-white shadow-sm">
                                 <thead className="sticky top-0 z-20 shadow-sm">
                                     <tr className="bg-[#1e3a5f]">
                                         <th className="w-12 px-2 py-2 text-center text-xs font-semibold text-white border border-[#2d5278]">#</th>
@@ -1108,110 +1112,133 @@ export default function AllBatchInfoPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Array.from({ length: MAX_ROWS }).map((_, idx) => (
-                                        <tr key={idx} className="bg-white hover:bg-gray-50 transition-colors group">
-                                            <td className="p-1 border border-gray-200 text-center text-xs text-gray-400 bg-gray-50 select-none">
-                                                {idx + 1}
-                                            </td>
-                                            {COLUMNS.map(col => (
-                                                <td key={col} className={`p-0 border border-gray-200`}>
-                                                    {col === "courseStatus" ? (
-                                                        <select
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
-                                                        >
-                                                            <option value=""></option>
-                                                            {isAddingRunningBatch ? (
-                                                                <>
-                                                                    <option value="Running">Running</option>
-                                                                    <option value="Completed">Completed</option>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <option value="Completed">Completed</option>
-                                                                    <option value="Running">Running</option>
-                                                                </>
-                                                            )}
-                                                            <option value="Incomplete">Incomplete</option>
-                                                            <option value="Expelled">Expelled</option>
-                                                        </select>
-                                                    ) : col === "category" ? (
-                                                        <select
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
-                                                        >
-                                                            <option value=""></option>
-                                                            <option value="Alim">Alim</option>
-                                                            <option value="General">General</option>
-                                                        </select>
-                                                    ) : col === "bloodGroup" ? (
-                                                        <select
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
-                                                        >
-                                                            <option value=""></option>
-                                                            <option value="A+">A+</option>
-                                                            <option value="A-">A-</option>
-                                                            <option value="B+">B+</option>
-                                                            <option value="B-">B-</option>
-                                                            <option value="AB+">AB+</option>
-                                                            <option value="AB-">AB-</option>
-                                                            <option value="O+">O+</option>
-                                                            <option value="O-">O-</option>
-                                                        </select>
-                                                    ) : col === "currentlyDoing" ? (
-                                                        <select
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
-                                                        >
-                                                            <option value=""></option>
-                                                            <option value="Job">Job</option>
-                                                            <option value="Business">Business</option>
-                                                            <option value="Studying Further">Studying Further</option>
-                                                        </select>
-                                                    ) : col === "salary" ? (
-                                                        <input
-                                                            type="number"
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onBlur={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={(e) => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none font-medium text-emerald-700"
-                                                        />
-                                                    ) : (
-                                                        <input
-                                                            type="text"
-                                                            defaultValue={rowDataRef.current[idx]?.[col] ?? ""}
-                                                            data-row={idx}
-                                                            data-col={col}
-                                                            onBlur={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={(e) => handlePaste(e, idx, col)}
-                                                            className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none"
-                                                        />
-                                                    )}
+                                    {pagedRows.map((rowData, pageIdx) => {
+                                        const absoluteIdx = gridPage * PAGE_SIZE + pageIdx;
+                                        return (
+                                            <tr key={absoluteIdx} className="bg-white hover:bg-gray-50 transition-colors group">
+                                                <td className="p-1 border border-gray-200 text-center text-xs text-gray-400 bg-gray-50 select-none">
+                                                    {absoluteIdx + 1}
                                                 </td>
-                                            ))}
-                                        </tr>
-                                    ))}
+                                                {COLUMNS.map(col => (
+                                                    <td key={col} className="p-0 border border-gray-200">
+                                                        {col === "courseStatus" ? (
+                                                            <select
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={e => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
+                                                            >
+                                                                <option value=""></option>
+                                                                {isAddingRunningBatch ? (
+                                                                    <>
+                                                                        <option value="Running">Running</option>
+                                                                        <option value="Completed">Completed</option>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <option value="Completed">Completed</option>
+                                                                        <option value="Running">Running</option>
+                                                                    </>
+                                                                )}
+                                                                <option value="Incomplete">Incomplete</option>
+                                                                <option value="Expelled">Expelled</option>
+                                                            </select>
+                                                        ) : col === "category" ? (
+                                                            <select
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={e => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
+                                                            >
+                                                                <option value=""></option>
+                                                                <option value="Alim">Alim</option>
+                                                                <option value="General">General</option>
+                                                            </select>
+                                                        ) : col === "bloodGroup" ? (
+                                                            <select
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={e => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
+                                                            >
+                                                                <option value=""></option>
+                                                                <option value="A+">A+</option>
+                                                                <option value="A-">A-</option>
+                                                                <option value="B+">B+</option>
+                                                                <option value="B-">B-</option>
+                                                                <option value="AB+">AB+</option>
+                                                                <option value="AB-">AB-</option>
+                                                                <option value="O+">O+</option>
+                                                                <option value="O-">O-</option>
+                                                            </select>
+                                                        ) : col === "currentlyDoing" ? (
+                                                            <select
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={e => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
+                                                            >
+                                                                <option value=""></option>
+                                                                <option value="Job">Job</option>
+                                                                <option value="Business">Business</option>
+                                                                <option value="Studying Further">Studying Further</option>
+                                                            </select>
+                                                        ) : col === "salary" ? (
+                                                            <input
+                                                                type="number"
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={(e) => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none font-medium text-emerald-700"
+                                                            />
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={rowData[col] ?? ""}
+                                                                onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
+                                                                onPaste={(e) => handlePaste(e, absoluteIdx, col)}
+                                                                className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none"
+                                                            />
+                                                        )}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
+
+                            {/* Pagination Controls */}
+                            <div className="flex items-center justify-between mt-3 px-1">
+                                <p className="text-xs text-gray-500">
+                                    Showing rows {gridPage * PAGE_SIZE + 1}–{Math.min((gridPage + 1) * PAGE_SIZE, MAX_ROWS)} of {MAX_ROWS}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setGridPage(p => Math.max(0, p - 1))}
+                                        disabled={gridPage === 0}
+                                        className="px-3 py-1 text-xs font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        ← Prev
+                                    </button>
+                                    {Array.from({ length: totalPages }).map((_, pi) => (
+                                        <button
+                                            key={pi}
+                                            onClick={() => setGridPage(pi)}
+                                            className={`w-7 h-7 text-xs font-semibold rounded ${gridPage === pi ? 'bg-[#059669] text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                                        >
+                                            {pi + 1}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setGridPage(p => Math.min(totalPages - 1, p + 1))}
+                                        disabled={gridPage === totalPages - 1}
+                                        className="px-3 py-1 text-xs font-medium rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Next →
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="p-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-xl bg-white sticky bottom-0 z-10 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">

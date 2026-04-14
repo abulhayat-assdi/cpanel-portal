@@ -60,9 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        // Periodic token refresh (every 10 minutes) to keep the cookie fresh
-        const refreshInterval = setInterval(async () => {
-            if (auth.currentUser) {
+        const refreshToken = async () => {
+            if (auth.currentUser && document.visibilityState === 'visible') {
                 try {
                     const token = await auth.currentUser.getIdToken(true);
                     await fetch("/api/auth/session", {
@@ -75,11 +74,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.error("[AuthContext] Token refresh failed:", err);
                 }
             }
-        }, 10 * 60 * 1000);
+        };
+
+        // Periodic token refresh (every 10 minutes)
+        const refreshInterval = setInterval(refreshToken, 10 * 60 * 1000);
+
+        // Also refresh when user comes back to the tab
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') refreshToken();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             unsubscribe();
             clearInterval(refreshInterval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 

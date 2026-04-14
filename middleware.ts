@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { COOKIES, APP_PATHS } from '@/lib/constants';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 const PUBLIC_API_ROUTES = [
     '/api/chat',
@@ -15,22 +16,24 @@ const isPublicAssetPath = (pathname: string) =>
     pathname.startsWith('/images') ||
     pathname === '/favicon.ico';
 
-const getRoleFromToken = (token: string) => {
-    try {
-        const segments = token.split('.');
-        if (segments.length !== 3) return undefined;
+// Fetch Google's public keys
+// Replace YOUR_PROJECT_ID with your actual Firebase project ID if available in env
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'asm-internal-portal';
+const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'));
 
-        const payload = segments[1];
-        const padded = payload.padEnd(payload.length + (4 - (payload.length % 4)) % 4, '=');
-        const decoded = atob(padded);
-        const parsed = JSON.parse(decoded);
-        return typeof parsed?.role === 'string' ? parsed.role : undefined;
+const verifyAndGetRole = async (token: string) => {
+    try {
+        const { payload } = await jwtVerify(token, JWKS, {
+            issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+            audience: PROJECT_ID,
+        });
+        return payload.role as string | undefined;
     } catch {
         return undefined;
     }
 };
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     if (isPublicAssetPath(pathname) || PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
@@ -44,7 +47,7 @@ export function middleware(request: NextRequest) {
 
     const session = request.cookies.get(COOKIES.SESSION)?.value;
     const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 100;
-    const role = hasSession ? getRoleFromToken(session) : undefined;
+    const role = hasSession ? await verifyAndGetRole(session) : undefined;
 
     if (isAuthPage && hasSession) {
         if (role === 'student') {

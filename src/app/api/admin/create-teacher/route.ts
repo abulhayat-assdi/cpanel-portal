@@ -22,7 +22,13 @@ export async function POST(req: NextRequest) {
 
         let decodedToken;
         try {
-            decodedToken = await adminAuth.verifyIdToken(token);
+            if (token === req.cookies.get("__session")?.value) {
+                // If it's a session cookie, verify as session cookie
+                decodedToken = await adminAuth.verifySessionCookie(token, true);
+            } else {
+                // If it's from Authorization: Bearer header, verify as ID token
+                decodedToken = await adminAuth.verifyIdToken(token);
+            }
         } catch (authError: unknown) {
             console.error("Auth verification failed in create-teacher:", authError);
             const message = authError instanceof Error ? authError.message : String(authError);

@@ -38,8 +38,8 @@ service cloud.firestore {
     // Users (Auth profiles & roles)
     match /users/{userId} {
       allow read: if isAuth() && (request.auth.uid == userId || isAdmin() || isTeacher());
-      // Users can create their own profile but cannot give themselves 'admin' role
-      allow create: if isAdmin() || (request.auth.uid == userId && request.resource.data.role != 'admin');
+      // FIXED: Explicitly force new users to be strictly 'student'
+      allow create: if isAdmin() || (request.auth.uid == userId && request.resource.data.role == 'student');
       // Users can update their profile but cannot modify the 'role' field
       allow update: if isAdmin() || (
         request.auth.uid == userId && 
