@@ -130,7 +130,7 @@ export const sendChatMessage = async (
         const threadRef = doc(db, "admin_chats", studentUid);
         const messagesRef = collection(db, "admin_chats", studentUid, "messages");
 
-        let lastMessageText = text.trim() || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : "");
+        const lastMessageText = text.trim() || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : "");
 
         const messageObj = {
             sender,

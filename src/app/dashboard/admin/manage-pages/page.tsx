@@ -107,7 +107,7 @@ export default function ManagePages() {
                     label="Page Title"
                     placeholder="Enter main title"
                     value={content?.header?.title || ""}
-                    onChange={(e) => setContent({ ...content, header: { ...content.header, title: e.target.value } })}
+                    onChange={(e) => setContent({ ...content!, header: { ...content!.header, title: e.target.value } })}
                 />
                 <div className="space-y-1">
                     <label className="text-sm font-medium text-gray-700">Page Subtitle / Description</label>
@@ -115,7 +115,7 @@ export default function ManagePages() {
                         rows={3}
                         placeholder="Enter description text"
                         value={content?.header?.subtitle || ""}
-                        onChange={(e) => setContent({ ...content, header: { ...content.header, subtitle: e.target.value } })}
+                        onChange={(e) => setContent({ ...content!, header: { ...content!.header, subtitle: e.target.value } })}
                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700 transition-all"
                     />
                 </div>
@@ -172,23 +172,23 @@ export default function ManagePages() {
                                 <Input
                                     label="Heading"
                                     value={content?.hero?.heading || ""}
-                                    onChange={(e) => setContent({ ...content, hero: { ...content.hero, heading: e.target.value } })}
+                                    onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, heading: e.target.value } })}
                                 />
                                 <Input
                                     label="Subheading"
                                     value={content?.hero?.subheading || ""}
-                                    onChange={(e) => setContent({ ...content, hero: { ...content.hero, subheading: e.target.value } })}
+                                    onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, subheading: e.target.value } })}
                                 />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Input
                                         label="Primary Button Text"
                                         value={content?.hero?.primaryButtonText || ""}
-                                        onChange={(e) => setContent({ ...content, hero: { ...content.hero, primaryButtonText: e.target.value } })}
+                                        onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, primaryButtonText: e.target.value } })}
                                     />
                                     <Input
                                         label="Secondary Button Text"
                                         value={content?.hero?.secondaryButtonText || ""}
-                                        onChange={(e) => setContent({ ...content, hero: { ...content.hero, secondaryButtonText: e.target.value } })}
+                                        onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, secondaryButtonText: e.target.value } })}
                                     />
                                 </div>
                             </div>
@@ -203,14 +203,14 @@ export default function ManagePages() {
                                 <Input
                                     label="Title"
                                     value={content?.targetAudience?.title || ""}
-                                    onChange={(e) => setContent({ ...content, targetAudience: { ...content.targetAudience, title: e.target.value } })}
+                                    onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, title: e.target.value } })}
                                 />
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Subtitle</label>
                                     <textarea
                                         rows={3}
                                         value={content?.targetAudience?.subtitle || ""}
-                                        onChange={(e) => setContent({ ...content, targetAudience: { ...content.targetAudience, subtitle: e.target.value } })}
+                                        onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, subtitle: e.target.value } })}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                     />
                                 </div>
@@ -226,14 +226,14 @@ export default function ManagePages() {
                                 <Input
                                     label="Title"
                                     value={content?.learningOutcomes?.title || ""}
-                                    onChange={(e) => setContent({ ...content, learningOutcomes: { ...content.learningOutcomes, title: e.target.value } })}
+                                    onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, title: e.target.value } })}
                                 />
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Subtitle</label>
                                     <textarea
                                         rows={3}
                                         value={content?.learningOutcomes?.subtitle || ""}
-                                        onChange={(e) => setContent({ ...content, learningOutcomes: { ...content.learningOutcomes, subtitle: e.target.value } })}
+                                        onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, subtitle: e.target.value } })}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                     />
                                 </div>
@@ -255,14 +255,14 @@ export default function ManagePages() {
                                         <Input
                                             label="Section Title"
                                             value={content?.aboutSection?.title || ""}
-                                            onChange={(e) => setContent({ ...content, aboutSection: { ...content.aboutSection, title: e.target.value } })}
+                                            onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, title: e.target.value } })}
                                         />
                                         <div className="space-y-1">
                                             <label className="text-sm font-medium text-gray-700">Description Paragraph 1</label>
                                             <textarea
                                                 rows={4}
                                                 value={content?.aboutSection?.description1 || ""}
-                                                onChange={(e) => setContent({ ...content, aboutSection: { ...content.aboutSection, description1: e.target.value } })}
+                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description1: e.target.value } })}
                                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                             />
                                         </div>
@@ -271,7 +271,7 @@ export default function ManagePages() {
                                             <textarea
                                                 rows={4}
                                                 value={content?.aboutSection?.description2 || ""}
-                                                onChange={(e) => setContent({ ...content, aboutSection: { ...content.aboutSection, description2: e.target.value } })}
+                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description2: e.target.value } })}
                                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                             />
                                         </div>
@@ -280,7 +280,7 @@ export default function ManagePages() {
                                             <textarea
                                                 rows={4}
                                                 value={content?.aboutSection?.description3 || ""}
-                                                onChange={(e) => setContent({ ...content, aboutSection: { ...content.aboutSection, description3: e.target.value } })}
+                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description3: e.target.value } })}
                                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                             />
                                         </div>
@@ -296,7 +296,7 @@ export default function ManagePages() {
                                         <Input
                                             label="Why Section Title"
                                             value={content?.whySection?.title || ""}
-                                            onChange={(e) => setContent({ ...content, whySection: { ...content.whySection, title: e.target.value } })}
+                                            onChange={(e) => setContent({ ...content!, whySection: { ...content!.whySection, title: e.target.value } })}
                                         />
                                     </div>
                                 </Card>
@@ -312,14 +312,14 @@ export default function ManagePages() {
                                             <textarea
                                                 rows={2}
                                                 value={content?.ctaSection?.text || ""}
-                                                onChange={(e) => setContent({ ...content, ctaSection: { ...content.ctaSection, text: e.target.value } })}
+                                                onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, text: e.target.value } })}
                                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                             />
                                         </div>
                                         <Input
                                             label="Button Text"
                                             value={content?.ctaSection?.buttonText || ""}
-                                            onChange={(e) => setContent({ ...content, ctaSection: { ...content.ctaSection, buttonText: e.target.value } })}
+                                            onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, buttonText: e.target.value } })}
                                         />
                                     </div>
                                 </Card>
@@ -336,14 +336,14 @@ export default function ManagePages() {
                                     <Input
                                         label="Social Section Title"
                                         value={content?.socialHeader?.title || ""}
-                                        onChange={(e) => setContent({ ...content, socialHeader: { ...content.socialHeader, title: e.target.value } })}
+                                        onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, title: e.target.value } })}
                                     />
                                     <div className="space-y-1">
                                         <label className="text-sm font-medium text-gray-700">Social Section Subtitle</label>
                                         <textarea
                                             rows={3}
                                             value={content?.socialHeader?.subtitle || ""}
-                                            onChange={(e) => setContent({ ...content, socialHeader: { ...content.socialHeader, subtitle: e.target.value } })}
+                                            onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, subtitle: e.target.value } })}
                                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                         />
                                     </div>

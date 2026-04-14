@@ -65,7 +65,7 @@ export default function ContactAdminStudent() {
             const uploadedAttachments: ChatAttachment[] = [];
 
             // Upload files
-            for (let file of files) {
+            for (const file of files) {
                 const formData = new FormData();
                 formData.append("file", file);
                 formData.append("category", "chat_files");

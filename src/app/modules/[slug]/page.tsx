@@ -5,8 +5,13 @@ import Footer from "@/components/ui/Footer";
 import { Metadata } from 'next';
 import CurriculumTimeline from "./CurriculumTimeline";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = getModuleData(params.slug);
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params;
+  const data = getModuleData(resolvedParams.slug);
   if (!data) return { title: 'Module Not Found' };
   return {
     title: `${data.title} | Sales & Marketing`,
@@ -14,8 +19,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function ModuleDetailsPage({ params }: { params: { slug: string } }) {
-  const courseData = getModuleData(params.slug);
+export default async function ModuleDetailsPage({ params }: Props) {
+  const resolvedParams = await params;
+  const courseData = getModuleData(resolvedParams.slug);
 
   if (!courseData) {
     notFound();

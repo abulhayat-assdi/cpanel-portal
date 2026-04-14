@@ -109,6 +109,7 @@ export const addTeacher = async (data: {
     profileImageUrl?: string;
     isAdmin?: boolean;
     order?: number;
+    leaveTrackingEnabled?: boolean;
 }): Promise<string> => {
     try {
         const teachersRef = collection(db, COLLECTIONS.TEACHERS);
@@ -123,6 +124,7 @@ export const addTeacher = async (data: {
             profileImageUrl: data.profileImageUrl || "",
             isAdmin: data.isAdmin || false,
             order: data.order || 0,
+            leaveTrackingEnabled: data.leaveTrackingEnabled || false,
             createdAt: serverTimestamp()
         });
         return docRef.id;

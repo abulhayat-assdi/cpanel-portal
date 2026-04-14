@@ -18,7 +18,6 @@ function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id
                 onClick={() => onPlay(story.videoId)}
             >
                 {!imgError ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <Image
                         src={thumbUrl}
                         alt={story.title}

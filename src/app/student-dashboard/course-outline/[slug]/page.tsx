@@ -3,16 +3,22 @@ import { getModuleData } from "@/data/modules";
 import { Metadata } from 'next';
 import CurriculumTimeline from "@/app/modules/[slug]/CurriculumTimeline";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = getModuleData(params.slug);
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params;
+  const data = getModuleData(resolvedParams.slug);
   if (!data) return { title: 'Module Not Found' };
   return {
     title: `${data.title} | Student Portal`,
   };
 }
 
-export default function StudentModuleOutlinePage({ params }: { params: { slug: string } }) {
-  const courseData = getModuleData(params.slug);
+export default async function StudentModuleOutlinePage({ params }: Props) {
+  const resolvedParams = await params;
+  const courseData = getModuleData(resolvedParams.slug);
 
   if (!courseData) {
     notFound();
