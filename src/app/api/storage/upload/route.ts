@@ -10,6 +10,21 @@ import { COOKIES, AUTH_ROLES } from "@/lib/constants";
  * FormData: { file, category (homework|resource), path (optional) }
  */
 export async function POST(request: NextRequest) {
+    // 🔒 CSRF: Reject requests whose Origin doesn't match our own domain.
+    // This prevents malicious sites from tricking an authenticated user into uploading files.
+    const origin = request.headers.get("origin") || "";
+    const allowedOrigins = [
+        process.env.NEXT_PUBLIC_APP_URL || "",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ].filter(Boolean);
+    const isLocalhost = origin.startsWith("http://localhost");
+    const isAllowedOrigin = allowedOrigins.some(o => o && origin.startsWith(o));
+    if (origin && !isLocalhost && !isAllowedOrigin) {
+        console.warn(`[Security] CSRF blocked: unknown Origin: ${origin}`);
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // 🔒 Auth Check: Accept token from Authorization header (XHR uploads) or cookie (fallback)
     const authHeader = request.headers.get("Authorization");
     let session: string | undefined;
@@ -28,7 +43,14 @@ export async function POST(request: NextRequest) {
     let userRole: string;
     try {
         const { adminAuth } = getAdminServices();
-        const decodedToken = await adminAuth.verifyIdToken(session);
+        // Branch: cookie needs verifySessionCookie; Bearer header needs verifyIdToken
+        let decodedToken;
+        const isCookieToken = session === request.cookies.get(COOKIES.SESSION)?.value;
+        if (isCookieToken) {
+            decodedToken = await adminAuth.verifySessionCookie(session, true);
+        } else {
+            decodedToken = await adminAuth.verifyIdToken(session);
+        }
         userUid = decodedToken.uid;
         userRole = decodedToken.role as string;
     } catch (error) {
@@ -43,6 +65,32 @@ export async function POST(request: NextRequest) {
 
         if (!file) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        }
+
+        // 🔒 SECURITY: Strict allowlist for file types — blocks .php, .exe, .sh, .html, etc.
+        // Double-check both extension AND MIME type to defeat content-type spoofing.
+        const ALLOWED_EXTENSIONS = new Set([
+            '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
+            '.docx', '.xlsx', '.csv', '.zip', '.mp4', '.mp3'
+        ]);
+        const ALLOWED_MIME_TYPES = new Set([
+            'application/pdf',
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv',
+            'application/zip',
+            'video/mp4',
+            'audio/mpeg'
+        ]);
+
+        const ext = path.extname(file.name).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.has(ext) || !ALLOWED_MIME_TYPES.has(file.type)) {
+            console.warn(`[Security] Blocked upload: type=${file.type}, ext=${ext}, uid=${userUid}`);
+            return NextResponse.json(
+                { error: "Invalid file type. Only standard documents, images, and media are allowed." },
+                { status: 400 }
+            );
         }
 
         // 📏 10 MB Size Limit
