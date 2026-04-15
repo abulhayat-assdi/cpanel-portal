@@ -20,7 +20,7 @@ export default function StudentProtectedRoute({ children }: { children: React.Re
         }
     }, [user, userProfile, loading, router]);
 
-    // Show loading spinner while auth and profile are resolving
+    // Show loading spinner while auth and profile are resolving, or during redirect
     if (loading || (user && !userProfile) || !user || (userProfile && userProfile.role !== "student")) {
         return (
             <div className="fixed inset-0 z-50 flex min-h-screen bg-gray-50">

@@ -4,6 +4,7 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { Metadata } from 'next';
 import CurriculumTimeline from "./CurriculumTimeline";
+import BackButton from "@/components/ui/BackButton";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -63,6 +64,10 @@ export default async function ModuleDetailsPage({ params }: Props) {
 
       <main className="min-h-screen bg-[#f1f3f5] flex flex-col pt-24" style={{ backgroundImage: "linear-gradient(#e9ecef 1px, transparent 1px), linear-gradient(90deg, #e9ecef 1px, transparent 1px)", backgroundSize: "40px 40px" }}>
         
+        <div className="w-full px-6 lg:px-8 pt-6">
+          <BackButton />
+        </div>
+
         {/* Minimal Hero Header for Infographic page */}
         <div className="w-full py-12 px-6 lg:px-8 relative z-10 text-center flex flex-col items-center">
            <span className="inline-block py-1.5 px-4 rounded-full bg-white shadow-sm border border-gray-200 text-gray-500 text-xs font-bold tracking-widest uppercase mb-4">

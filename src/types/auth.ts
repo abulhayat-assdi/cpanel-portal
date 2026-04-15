@@ -19,9 +19,9 @@ export interface AuthContextType {
     user: User | null;
     userProfile: UserProfile | null;
     loading: boolean;
-    loginWithEmail: (email: string, password: string) => Promise<void>;
-    registerWithEmail: (email: string, password: string, name: string, batchName: string, roll: string) => Promise<void>;
-    loginWithGoogle: () => Promise<void>;
+    loginWithEmail: (email: string, password: string) => Promise<User>;
+    registerWithEmail: (email: string, password: string, name: string, batchName: string, roll: string) => Promise<User>;
+    loginWithGoogle: () => Promise<User>;
     logout: () => Promise<void>;
     sendPasswordReset: (email: string) => Promise<void>;
     refreshProfile: () => Promise<void>; // Added to refresh after linking

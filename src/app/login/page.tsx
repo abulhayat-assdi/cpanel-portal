@@ -46,8 +46,23 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            await loginWithEmail(email, password);
-            router.push("/dashboard");
+            const user = await loginWithEmail(email, password);
+            
+            // 2. Call the session API to set the session cookie and await it completely
+            const idToken = await user.getIdToken();
+            const sessionRes = await fetch("/api/auth/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
+
+            if (!sessionRes.ok) {
+                throw new Error("Failed to establish session. Please try again.");
+            }
+
+            // 3. Force a hard redirect to bypass Next.js client-side router cache
+            // This ensures server components render with the fresh session cookie on first login
+            window.location.href = "/dashboard";
             return;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to login. Please try again.";

@@ -23,41 +23,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            // If no user, we can immediately stop loading
+            if (!firebaseUser) {
+                setUser(null);
+                setUserProfile(null);
+                // Clear session cookie via secure server-side API
+                await fetch("/api/auth/session", { method: "DELETE" }).catch(() => { });
+                setLoading(false);
+                return;
+            }
+
+            // If we have a user, set it but KEEP loading = true
             setUser(firebaseUser);
 
-            if (firebaseUser) {
-                try {
-                    // 1. Sync session cookie via secure server-side API (HttpOnly)
-                    const token = await firebaseUser.getIdToken();
-                    await fetch("/api/auth/session", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ idToken: token }),
-                    });
+            try {
+                // 1. Sync session cookie via secure server-side API (HttpOnly)
+                const token = await firebaseUser.getIdToken();
+                await fetch("/api/auth/session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ idToken: token }),
+                });
 
-                    // 2. Fetch enriched profile via Server API
-                    const profileRes = await fetch("/api/auth/profile");
-                    if (profileRes.ok) {
-                        const profile = await profileRes.json();
-                        setUserProfile(profile);
-                    } else {
-                        // Fallback to client-side fetch if API fails (unlikely)
-                        const profile = await authService.getUserProfile(firebaseUser.uid);
-                        setUserProfile(profile);
-                    }
-                } catch (err) {
-                    console.error("[AuthContext] Sync failed:", err);
-                    // Fallback to client-side fetch on error
+                // 2. Fetch enriched profile via Server API
+                const profileRes = await fetch("/api/auth/profile");
+                if (profileRes.ok) {
+                    const profile = await profileRes.json();
+                    setUserProfile(profile);
+                } else {
+                    // Fallback to client-side fetch if API fails (unlikely)
                     const profile = await authService.getUserProfile(firebaseUser.uid);
                     setUserProfile(profile);
                 }
-            } else {
-                // Clear session cookie via secure server-side API
-                await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
-                setUserProfile(null);
+            } catch (err) {
+                console.error("[AuthContext] Sync failed:", err);
+                // Fallback to client-side fetch on error
+                try {
+                    const profile = await authService.getUserProfile(firebaseUser.uid);
+                    setUserProfile(profile);
+                } catch (fallbackErr) {
+                    console.error("[AuthContext] Fallback profile fetch failed:", fallbackErr);
+                }
+            } finally {
+                // ONLY set loading to false after all profile attempts are finished
+                setLoading(false);
             }
-
-            setLoading(false);
         });
 
         const refreshToken = async () => {
@@ -95,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginWithEmail = async (email: string, password: string) => {
         setLoading(true);
         try {
-            await authService.loginWithEmail(email, password);
+            return await authService.loginWithEmail(email, password);
         } catch (error) {
             setLoading(false);
             throw error;
@@ -106,6 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.registerWithEmail(email, password, name, batchName, roll);
+            // After successful registration and local login via authService.registerWithEmail
+            if (!auth.currentUser) throw new Error("Registration succeeded but user not found.");
+            return auth.currentUser;
         } catch (error) {
             setLoading(false);
             throw error;
@@ -125,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginWithGoogle = async () => {
         setLoading(true);
         try {
-            await authService.loginWithGoogle();
+            return await authService.loginWithGoogle();
         } catch (error) {
             setLoading(false);
             throw error;

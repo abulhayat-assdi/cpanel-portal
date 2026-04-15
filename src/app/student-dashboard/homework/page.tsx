@@ -14,7 +14,13 @@ import {
 } from "@/services/homeworkService";
 
 export default function HomeworkSubmissionPage() {
-    const { userProfile, loading: authLoading } = useAuth();
+    const { user, userProfile, loading: authLoading } = useAuth();
+    const [isClient, setIsClient] = useState(false);
+
+    // Set isClient to true once mounted
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Assignments & Teachers
     const [assignments, setAssignments] = useState<HomeworkAssignment[]>([]);
@@ -63,15 +69,15 @@ export default function HomeworkSubmissionPage() {
                  } finally {
                      setLoadingAssignments(false);
                  }
-             } else {
+             } else if (!authLoading) {
                  setLoadingAssignments(false);
              }
         };
 
-        if (!authLoading && userProfile) {
+        if (isClient && !authLoading && user && userProfile) {
             fetchAssignments();
         }
-    }, [userProfile, authLoading]);
+    }, [user, userProfile, authLoading, isClient]);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -86,10 +92,10 @@ export default function HomeworkSubmissionPage() {
                 }
             }
         };
-        if (!authLoading && userProfile) {
+        if (isClient && !authLoading && user && userProfile) {
             fetchHistory();
         }
-    }, [userProfile, authLoading]);
+    }, [user, userProfile, authLoading, isClient]);
 
     // When teacher changes, reset assignment selection
     useEffect(() => {

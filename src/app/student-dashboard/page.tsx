@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllBatchInfo, StudentBatchInfo } from "@/services/batchInfoService";
+import { StudentBatchInfo } from "@/services/batchInfoService";
 import { getAllStudentNotices, StudentNotice } from "@/services/dashboardService";
 import Link from "next/link";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const AcademicCapIcon = ({ className }: { className: string }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,14 +40,21 @@ export default function StudentDashboardOverview() {
         const fetchMyData = async () => {
             if (userProfile?.studentBatchName && userProfile?.studentRoll) {
                 try {
-                    const [allData, notices] = await Promise.all([
-                        getAllBatchInfo(),
-                        getAllStudentNotices()
+                    const noticesPromise = getAllStudentNotices();
+                    const docId = `${userProfile.studentBatchName.replace(/\\s+/g, '_')}_${userProfile.studentRoll}`;
+                    const docRef = doc(db, "batch_info", docId);
+                    const docSnapPromise = getDoc(docRef);
+                    
+                    const [notices, docSnap] = await Promise.all([
+                        noticesPromise,
+                        docSnapPromise
                     ]);
-                    const match = allData.find(
-                        d => d.batchName === userProfile.studentBatchName && d.roll === userProfile.studentRoll
-                    );
-                    setStudentData(match || null);
+                    
+                    if (docSnap.exists()) {
+                        setStudentData(docSnap.data() as StudentBatchInfo);
+                    } else {
+                        setStudentData(null);
+                    }
                     setStudentNotices(notices);
                 } catch (err) {
                     console.error("Failed to fetch student data:", err);

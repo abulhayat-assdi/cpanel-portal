@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
+    const { user, userProfile, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -14,8 +14,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         }
     }, [user, loading, router]);
 
-    // Show full-page dashboard skeleton overlay while checking auth
-    if (loading) {
+    // Show full-page dashboard skeleton overlay while checking auth, profile or during redirect
+    if (loading || !user || !userProfile) {
         return (
             <div className="fixed inset-0 z-50 flex min-h-screen bg-gray-50">
                 {/* Sidebar Skeleton */}
@@ -62,11 +62,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
                 </div>
             </div>
         );
-    }
-
-    // Don't render children if not authenticated
-    if (!user) {
-        return null;
     }
 
     return <>{children}</>;

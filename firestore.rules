@@ -40,7 +40,7 @@ service cloud.firestore {
       // get: single-doc reads (own profile, admin/teacher fetching one user)
       allow get: if isAuth() && (request.auth.uid == userId || isAdmin() || isTeacher());
       // list: collection queries — admin/teacher only, forced pagination (max 100 docs)
-      allow list: if isAuth() && (isAdmin() || isTeacher()) && request.query.limit <= 100;
+      allow list: if isAuth() && (isAdmin() || isTeacher());
       // FIXED: Explicitly force new users to be strictly 'student'
       allow create: if isAdmin() || (request.auth.uid == userId && request.resource.data.role == 'student');
       // Users can update their profile but cannot modify the 'role' field
@@ -87,7 +87,7 @@ service cloud.firestore {
     // Resources Library
     match /resources/{resourceId} {
       allow get: if isAuth();
-      allow list: if isAuth() && request.query.limit <= 100;
+      allow list: if isAuth();
       allow write: if isAdmin();
     }
 
@@ -95,7 +95,7 @@ service cloud.firestore {
     match /batch_info/{docId} {
       allow get: if isAuth();
       // Force pagination on batch-info list queries (can hold thousands of student records)
-      allow list: if isAuth() && (isAdmin() || isTeacher()) && request.query.limit <= 100;
+      allow list: if isAuth() && (isAdmin() || isTeacher());
       allow write: if isAdmin();
     }
 
@@ -134,7 +134,7 @@ service cloud.firestore {
     // Student Profile Updates
     match /student_profile_updates/{docId} {
       allow get: if isAuth();
-      allow list: if isAuth() && (isAdmin() || isTeacher()) && request.query.limit <= 100;
+      allow list: if isAuth() && (isAdmin() || isTeacher());
       // Students can only create updates tagged with their own UID
       allow create: if isAuth() && 
                     request.resource.data.studentUid == request.auth.uid &&
@@ -164,7 +164,7 @@ service cloud.firestore {
         )
       );
       // list: admin/teacher only, forced pagination
-      allow list: if isAuth() && (isAdmin() || isTeacher()) && request.query.limit <= 100;
+      allow list: if isAuth() && (isAdmin() || isTeacher());
       allow write: if isAdmin();
     }
 
@@ -200,7 +200,7 @@ service cloud.firestore {
     match /module_resources/{docId} {
       // ✅ All authenticated users can read a single resource
       allow get: if isAuth();
-      allow list: if isAuth() && request.query.limit <= 100;
+      allow list: if isAuth();
       // ✅ Only teachers/admins can create; teacher must own the resource
       allow create: if (isTeacher() || isAdmin()) &&
         request.resource.data.teacherUid == request.auth.uid;
@@ -214,7 +214,7 @@ service cloud.firestore {
     match /module_folders/{docId} {
       // ✅ All authenticated users can read a single folder
       allow get: if isAuth();
-      allow list: if isAuth() && request.query.limit <= 100;
+      allow list: if isAuth();
       // ✅ Only teachers/admins can create folders; teacher must own the folder
       allow create: if (isTeacher() || isAdmin()) &&
         request.resource.data.teacherUid == request.auth.uid;
@@ -227,12 +227,15 @@ service cloud.firestore {
     // Homework Submissions — Students create (owner-only), all auth read, admin/system deletes
     match /homework_submissions/{docId} {
       allow create: if isAuth() && 
-                    request.resource.data.studentUid == request.auth.uid &&
-                    request.resource.data.homeworkUrl.size() < 500;
+                    request.resource.data.studentUid == request.auth.uid;
       // get: individual record (owner, admin, teacher)
       allow get: if isAuth() && (resource.data.studentUid == request.auth.uid || isAdmin() || isTeacher());
-      // list: admin/teacher only, paginated
-      allow list: if isAuth() && (isAdmin() || isTeacher()) && request.query.limit <= 100;
+      allow list: if isAuth() && (
+        isAdmin() || 
+        isTeacher() || 
+        resource.data.studentUid == request.auth.uid
+      );
+      
       allow update: if false; // Homework cannot be edited once submitted
       // Only owner or admin can delete
       allow delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
@@ -241,7 +244,7 @@ service cloud.firestore {
     // Homework Assignments — Teachers and Admins can create/delete/update, students can read.
     match /homework_assignments/{docId} {
       allow get: if isAuth();
-      allow list: if isAuth() && request.query.limit <= 100;
+      allow list: if isAuth();
       allow write: if isTeacher() || isAdmin();
     }
 

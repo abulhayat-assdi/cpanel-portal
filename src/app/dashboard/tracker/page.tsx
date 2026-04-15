@@ -166,7 +166,7 @@ export default function TrackerDashboardPage() {
                 .sort((a, b) => a.date.localeCompare(b.date));
 
             if (docsInRange.length === 0) {
-                showToast("📭 এই সময়কালে কোনো ডেটা পাওয়া যায়নি।", "error");
+                showToast("📭 এই সময়কালে কোনো ডেটা পাওয়া পাওয়া যায়নি।", "error");
                 return;
             }
 
