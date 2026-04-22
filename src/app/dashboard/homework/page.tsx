@@ -414,7 +414,7 @@ export default function HomeworkViewPage() {
                                     className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col md:flex-row"
                                 >
                                     {/* Student Card Block */}
-                                    <div className="p-5 md:w-2/5 border-b md:border-b-0 md:border-r border-gray-50 bg-gray-50/50 flex flex-col justify-center">
+                                    <div className="p-5 md:w-2/5 shrink-0 border-b md:border-b-0 md:border-r border-gray-50 bg-gray-50/50 flex flex-col justify-center">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-xl shrink-0 shadow-inner">
                                                 {hw.studentName.charAt(0).toUpperCase()}
@@ -432,7 +432,7 @@ export default function HomeworkViewPage() {
                                     </div>
 
                                     {/* Content Block */}
-                                    <div className="p-5 flex-1 flex flex-col">
+                                    <div className="p-5 flex-1 flex flex-col min-w-0">
                                         <div className="flex items-start justify-between gap-2 mb-3">
                                             <p className="text-xs text-gray-400 font-medium">Submitted: {hw.submissionDate}</p>
                                         </div>
@@ -445,19 +445,19 @@ export default function HomeworkViewPage() {
                                                     ? [{ fileName: hw.fileName, fileUrl: hw.fileUrl ?? "", storagePath: hw.storagePath ?? "", fileSize: 0 }]
                                                     : [];
                                             return filesToShow.length > 0 ? (
-                                                <div className="mb-3 space-y-1.5">
+                                                <div className="mb-3 space-y-1.5 min-w-0">
                                                     {filesToShow.map((f, i) => (
                                                         <a
                                                             key={i}
                                                             href={f.fileUrl}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 px-3 py-2 bg-blue-50/80 border border-blue-100 rounded-lg text-sm text-blue-800 hover:bg-blue-100 transition-colors group/link w-fit max-w-full"
+                                                            className="flex items-center gap-2 px-3 py-2 bg-blue-50/80 border border-blue-100 rounded-lg text-sm text-blue-800 hover:bg-blue-100 transition-colors group/link w-full min-w-0"
                                                         >
                                                             <svg className="w-4 h-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                                             </svg>
-                                                            <span className="truncate font-semibold group-hover/link:underline">{f.fileName}</span>
+                                                            <span className="truncate font-semibold group-hover/link:underline flex-1 min-w-0">{f.fileName}</span>
                                                             {f.fileSize > 0 && (
                                                                 <span className="text-xs text-blue-400 shrink-0">({(f.fileSize/1024/1024).toFixed(1)}MB)</span>
                                                             )}
@@ -468,17 +468,29 @@ export default function HomeworkViewPage() {
                                         })()}
 
 
-                                        {/* Text preview */}
+                                        {/* Text preview — URLs become clickable links */}
                                         {hw.textContent && (
-                                            <p className="text-sm text-gray-600 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100 line-clamp-3 mb-3 italic">
-                                                "{hw.textContent}"
-                                            </p>
+                                            <div className="text-sm text-gray-600 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100 mb-3 italic line-clamp-3">
+                                                {/https?:\/\/\S+/i.test(hw.textContent) ? (
+                                                    <a
+                                                        href={hw.textContent.trim()}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 hover:underline break-all not-italic font-medium"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        🔗 {hw.textContent.trim()}
+                                                    </a>
+                                                ) : (
+                                                    <span>&quot;{hw.textContent}&quot;</span>
+                                                )}
+                                            </div>
                                         )}
 
                                         {/* Spacer to push buttons down */}
                                         <div className="flex-1"></div>
 
-                                        <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-4 mt-auto">
+                                        <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-4 mt-auto shrink-0">
                                             <button
                                                 onClick={() => handleDelete(hw)}
                                                 disabled={deletingId === hw.id}
@@ -488,7 +500,7 @@ export default function HomeworkViewPage() {
                                             </button>
                                             <button
                                                 onClick={() => setViewingSubmission(hw)}
-                                                className="text-sm font-bold text-white bg-[#059669] hover:bg-[#047857] px-4 py-1.5 rounded-lg transition-colors shadow-sm"
+                                                className="text-sm font-bold text-white bg-[#059669] hover:bg-[#047857] px-4 py-1.5 rounded-lg transition-colors shadow-sm whitespace-nowrap"
                                             >
                                                 View Details  ↗
                                             </button>
@@ -574,7 +586,21 @@ export default function HomeworkViewPage() {
                                 <div>
                                     <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Written Content</label>
                                     <div className="bg-gray-50/80 rounded-xl px-5 py-4 text-sm text-gray-800 border border-gray-200 whitespace-pre-wrap leading-relaxed shadow-inner font-medium">
-                                        {viewingSubmission.textContent}
+                                        {/https?:\/\/\S+/i.test(viewingSubmission.textContent) ? (
+                                            <a
+                                                href={viewingSubmission.textContent.trim()}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:underline break-all font-semibold flex items-center gap-2"
+                                            >
+                                                <svg className="w-4 h-4 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                                {viewingSubmission.textContent.trim()}
+                                            </a>
+                                        ) : (
+                                            viewingSubmission.textContent
+                                        )}
                                     </div>
                                 </div>
                             )}

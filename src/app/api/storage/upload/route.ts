@@ -100,10 +100,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 📏 10 MB Size Limit
-        const MAX_SIZE = 10 * 1024 * 1024;
+        // 📏 50 MB Size Limit per file
+        const MAX_SIZE = 50 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
-            return NextResponse.json({ error: "File too large (Max 10MB)" }, { status: 400 });
+            return NextResponse.json({ error: "File too large (Max 50MB per file)" }, { status: 400 });
         }
 
         const localStoragePath = process.env.LOCAL_STORAGE_PATH || "../storage";

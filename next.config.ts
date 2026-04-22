@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     experimental: {
         serverActions: {
             allowedOrigins: ['divinetradeint.com', 'www.divinetradeint.com', '*.divinetradeint.com'],
+            // Allow up to 50MB for server actions (homework file uploads)
+            bodySizeLimit: '50mb',
         },
     },
     images: {

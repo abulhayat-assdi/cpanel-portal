@@ -46,7 +46,7 @@ export default function HomeworkSubmissionPage() {
     const [mySubmissions, setMySubmissions] = useState<HomeworkSubmission[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
 
-    const MAX_TOTAL_SIZE_MB = 15;
+    const MAX_TOTAL_SIZE_MB = 50;
     const MAX_TOTAL_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
 
     // Calculate total size of selected files
